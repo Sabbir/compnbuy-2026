@@ -87,36 +87,45 @@ function extractFromDom() {
 
   // Shopify themes use .product-item, .grid__item, or [class*="product-card"]
   const selectors = [
-    ".product-item",
-    ".grid__item",
-    "[class*='product-card']",
-    "[class*='ProductCard']",
-    "[class*='product-grid'] li",
-    ".collection-grid__item",
-    "li[class*='item']",
+    ".t4s-product",           // Main product wrapper
+    ".t4s-product-inner",
+    ".t4s-product-price",
   ];
 
   let cards = [];
   for (const sel of selectors) {
-    const found = document.querySelectorAll(sel);
+    const found = document.querySelectorAll(sel+".t4s-col-item");
     console.log(found)
     if (found.length > 2) { cards = found; break; }
   }
 
   return Array.from(cards).map((card) => {
     const nameEl   = card.querySelector("[class*='title'], [class*='name'], h2, h3");
-    const priceEl  = card.querySelector("[class*='price']:not([class*='compare']):not([class*='was'])");
-    const origEl   = card.querySelector("[class*='compare'], [class*='was'], s, del");
+    const priceEl  = card.querySelector(".t4s-product-price");
     const imgEl    = card.querySelector("img");
     const linkEl   = card.querySelector("a");
 
     const name = nameEl?.textContent?.trim() || "";
     if (!name) return null;
 
+    const origEl = priceEl.querySelector('del');
+    const insEl = priceEl.querySelector('ins')
+
+    let regEl = '';
+    let salEl = '';
+    if (origEl && insEl) {
+          // Product is on sale
+          regEl = origEl.innerText.trim();
+          salEl = insEl.innerText.trim();
+      } else {
+          // Regular price
+          salEl = priceEl.innerText.trim();
+      }
+
     return {
       name,
-      price:         cleanPrice(priceEl?.textContent),
-      originalPrice: cleanPrice(origEl?.textContent),
+      price:         cleanPrice(salEl),
+      originalPrice: cleanPrice(regEl),
       discount:      null,
       imageUrl:      imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
       productUrl:    linkEl?.href || "",
@@ -242,10 +251,10 @@ async function searchBlucheez(keyword, pages = 1) {
       // DOM fallback — search results rendered in same product grid
       for (let p = 1; p <= pages; p++) {
         const url = p === 1 ? searchUrl : `${searchUrl}&page=${p}`;
-        console.log(searchUrl)
         if (p > 1) await navigateTo(page, url);
         await autoScroll(page);
         const dom = await page.evaluate(extractFromDom);
+        console.log(dom);
         if (dom.length === 0) break;
         results.push(...dom);
         if (p < pages) await sleep(DELAY);

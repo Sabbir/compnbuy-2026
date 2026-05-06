@@ -22,7 +22,6 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const { q } = req.query;
-    console.log(q)
 
     if (!q || !q.trim()) {
       return badRequest(res, 'Query parameter "q" is required');

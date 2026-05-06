@@ -5,12 +5,12 @@
 
 const { scrapeBlucheez, getBlucheezCollections, searchBlucheez } = require("./blucheezScraper");
 const { scrapeFabrilife, getFabrilifeCategories, searchFabrilife } = require("./fabrilifeScraper");
-const { scrapeTwelve,   getTwelveCategories,    searchTwelve }   = require("./twelveScraper");
+const { scrapeTwelve,   getTwelveCategories,    searchTwelve }   = require("./lereveScraper");
 
 const SOURCE_DEFAULTS = {
   blucheez:  "https://blucheez.fashion/collections/all",
   fabrilife: "https://fabrilife.com/products",
-  twelvebd:  "https://twelvebd.com/shop",
+  lereve:  "https://www.lerevecraze.com/product-category",
 };
 
 const SCRAPERS = {

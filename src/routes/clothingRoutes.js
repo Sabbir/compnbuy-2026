@@ -32,7 +32,7 @@ const router = Router();
 const ALLOWED_DOMAINS = {
   blucheez:  "blucheez.fashion",
   fabrilife: "fabrilife.com",
-  twelvebd:  "twelvebd.com",
+  lereve:  "lerevecraze.com",
 };
 
 function isAllowedUrl(source, url) {

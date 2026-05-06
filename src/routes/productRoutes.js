@@ -21,7 +21,6 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const { url } = req.query;
-    console.log(url)
 
     if (!url)                  return badRequest(res, 'Query parameter "url" is required');
     if (!isValidDarazUrl(url)) return badRequest(res, '"url" must be a valid daraz.com.bd URL');

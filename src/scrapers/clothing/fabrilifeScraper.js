@@ -115,15 +115,10 @@ function extractFromDom() {
   };
 
   const selectors = [
-    "[class*='product-card']",
-    "[class*='ProductCard']",
-    "[class*='product-item']",
-    ".product",
-    "[class*='item-card']",
-    ".card.product",
-    "[data-product-id]",
-    "[data-id]",
-    ".col-product",
+    '.product-card',
+    '.product-name',
+    '[Class: "product-card"]',
+    '.product-price-row'
   ];
 
   let cards = [];
@@ -137,12 +132,12 @@ function extractFromDom() {
       "[class*='name'], [class*='title'], h2, h3, h4, [class*='product-name']"
     );
     const priceEl = card.querySelector(
-      "[class*='price']:not([class*='old']):not([class*='regular']):not([class*='was'])"
+      '.card-text, [class*="price-current"]'
     );
     const origEl  = card.querySelector(
-      "[class*='old'], [class*='regular'], [class*='was'], del, s, strike"
+      "[class*='price-original'], [class*='was'], del, s, strike"
     );
-    const discEl  = card.querySelector("[class*='discount'], [class*='off'], [class*='badge']");
+    const discEl  = card.querySelector("[class*='price-off'], [class*='badge']");
     const imgEl   = card.querySelector("img");
     const linkEl  = card.querySelector("a");
     const unitEl  = card.querySelector("[class*='size'], [class*='unit']");
@@ -292,6 +287,7 @@ async function searchFabrilife(keyword, pages = 1) {
         await autoScroll(page);
         const dom = await page.evaluate(extractFromDom);
         if (dom.length === 0) break;
+
         results.push(...dom);
         if (p < pages) await sleep(DELAY);
       }
