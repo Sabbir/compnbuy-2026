@@ -30,9 +30,9 @@ const { cacheKey, getOrFetch } = require("../utils/cache");
 const router = Router();
 
 const ALLOWED_DOMAINS = {
-  chaldal:     "chaldal.com",
-  thebasketbd: "thebasketbd.com",
-  meenabazaar: "meenabazaronline.com",
+  chaldal:      "chaldal.com",
+  thebasketbd:  "thebasketbd.com",
+  aamaderbazar: "aamaderbazar.com",
 };
 
 function isAllowedUrl(source, url) {
@@ -131,19 +131,24 @@ router.get(
   })
 );
 
-// ─── GET /api/grocery/meenabazaar/categories ──────────────────────────────────
+// ─── GET /api/grocery/aamaderbazar/categories ────────────────────────────────
 router.get(
-  "/meenabazaar/categories",
+  "/aamaderbazar/categories",
   asyncHandler(async (req, res) => {
-    const key = cacheKey("grocery:meena:cats", {});
+    const key = cacheKey("grocery:aamaderbazar:cats", {});
     let fromCache = true;
     const cats    = await getOrFetch(key, () => {
       fromCache = false;
-      return getMeenaCategories();
+      return getMeenaCategories(); // points to getAamaderBazarCategories internally
     });
-    return success(res, cats, { count: cats.length, cached: fromCache });
+    return success(res, cats, { source: "aamaderbazar", count: cats.length, cached: fromCache });
   })
 );
+
+// ─── backward compat: keep /meenabazaar/categories returning 404 ──────────────
+router.get("/meenabazaar/categories", (req, res) => {
+  res.status(410).json({ status: "error", message: "Meena Bazaar has been removed. Use /api/grocery/aamaderbazar/categories instead." });
+});
 
 // ─── GET /api/grocery/:source?url=&pages=&q= ─────────────────────────────────
 router.get(

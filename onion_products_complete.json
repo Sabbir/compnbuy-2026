@@ -1,0 +1,885 @@
+{
+  "scrapedAt": "2026-05-08T04:43:34.663Z",
+  "url": "https://aamaderbazar.com/?s=onion&post_type=product",
+  "searchInfo": {
+    "title": "onion - Aamader Bazar",
+    "searchTerm": "Search results: “onion”",
+    "resultCount": "Showing all 9 results"
+  },
+  "summary": {
+    "totalProducts": 9,
+    "categoriesCount": 76,
+    "tagsCount": 45,
+    "uniqueProductTags": 15,
+    "productsOnSale": 1,
+    "availableProducts": 9
+  },
+  "sidebarCategories": [
+    {
+      "name": "Air Freshener",
+      "count": 11
+    },
+    {
+      "name": "Baby Food",
+      "count": 18
+    },
+    {
+      "name": "Baby Food & Care",
+      "count": 51
+    },
+    {
+      "name": "Baking Needs",
+      "count": 22
+    },
+    {
+      "name": "Bashundhara Group",
+      "count": 3
+    },
+    {
+      "name": "Basket",
+      "count": 2
+    },
+    {
+      "name": "Bath & Body",
+      "count": 56
+    },
+    {
+      "name": "Beverages",
+      "count": 130
+    },
+    {
+      "name": "Biscuit",
+      "count": 55
+    },
+    {
+      "name": "Bread, Biscuits & Cake",
+      "count": 88
+    },
+    {
+      "name": "Cake",
+      "count": 28
+    },
+    {
+      "name": "Carpet",
+      "count": 1
+    },
+    {
+      "name": "Chips & Chanachur",
+      "count": 50
+    },
+    {
+      "name": "Chocolates & Candies",
+      "count": 24
+    },
+    {
+      "name": "Coffee",
+      "count": 10
+    },
+    {
+      "name": "Combo Offers",
+      "count": 13
+    },
+    {
+      "name": "Condensed Milk",
+      "count": 2
+    },
+    {
+      "name": "Cooking Essentials",
+      "count": 325
+    },
+    {
+      "name": "Cooking Oil",
+      "count": 46
+    },
+    {
+      "name": "Daal & Chola",
+      "count": 15
+    },
+    {
+      "name": "Daily Deals",
+      "count": 62
+    },
+    {
+      "name": "Dairy",
+      "count": 111
+    },
+    {
+      "name": "Decor",
+      "count": 1
+    },
+    {
+      "name": "Detergent Powder",
+      "count": 13
+    },
+    {
+      "name": "Diaper",
+      "count": 25
+    },
+    {
+      "name": "Dishwashing Agent",
+      "count": 15
+    },
+    {
+      "name": "Egg",
+      "count": 7
+    },
+    {
+      "name": "Flour (Atta, Moida etc. )",
+      "count": 27
+    },
+    {
+      "name": "Fruits",
+      "count": 17
+    },
+    {
+      "name": "Ghee",
+      "count": 13
+    },
+    {
+      "name": "Handwash",
+      "count": 11
+    },
+    {
+      "name": "Home & Lifestyle",
+      "count": 7
+    },
+    {
+      "name": "Home Appliances",
+      "count": 9
+    },
+    {
+      "name": "Home Care & Cleaning",
+      "count": 89
+    },
+    {
+      "name": "Honey",
+      "count": 5
+    },
+    {
+      "name": "Ice Cream",
+      "count": 44
+    },
+    {
+      "name": "Imported Products",
+      "count": 23
+    },
+    {
+      "name": "Juice",
+      "count": 15
+    },
+    {
+      "name": "Kitchen Application",
+      "count": 9
+    },
+    {
+      "name": "Ladies Bag",
+      "count": 1
+    },
+    {
+      "name": "Laundry Soap",
+      "count": 4
+    },
+    {
+      "name": "Liquid Milk",
+      "count": 15
+    },
+    {
+      "name": "Nestle",
+      "count": 13
+    },
+    {
+      "name": "New Zealand Dairy",
+      "count": 16
+    },
+    {
+      "name": "Noodles",
+      "count": 24
+    },
+    {
+      "name": "Personal Care",
+      "count": 214
+    },
+    {
+      "name": "Pest Control",
+      "count": 11
+    },
+    {
+      "name": "Pickles",
+      "count": 15
+    },
+    {
+      "name": "Powder Drinks",
+      "count": 18
+    },
+    {
+      "name": "Powder Milk",
+      "count": 29
+    },
+    {
+      "name": "Pran",
+      "count": 13
+    },
+    {
+      "name": "Puffed Rice",
+      "count": 7
+    },
+    {
+      "name": "Rice",
+      "count": 31
+    },
+    {
+      "name": "Salt & Sugar",
+      "count": 12
+    },
+    {
+      "name": "Sauces",
+      "count": 19
+    },
+    {
+      "name": "Shampoo & Haircare",
+      "count": 61
+    },
+    {
+      "name": "Shaving & Facial Care",
+      "count": 13
+    },
+    {
+      "name": "Shayesta Kha Offer!",
+      "count": 52
+    },
+    {
+      "name": "Shemai",
+      "count": 10
+    },
+    {
+      "name": "Skin Care",
+      "count": 68
+    },
+    {
+      "name": "Snacks & Instant Foods",
+      "count": 130
+    },
+    {
+      "name": "Soft Drinks",
+      "count": 62
+    },
+    {
+      "name": "Soup",
+      "count": 6
+    },
+    {
+      "name": "Special Offers!",
+      "count": 104
+    },
+    {
+      "name": "Spices (Ada,Rosun etc.)",
+      "count": 119
+    },
+    {
+      "name": "Spreads",
+      "count": 27
+    },
+    {
+      "name": "Square Food & Beverage Ltd.",
+      "count": 29
+    },
+    {
+      "name": "Tea",
+      "count": 28
+    },
+    {
+      "name": "Tissue",
+      "count": 9
+    },
+    {
+      "name": "Toilet Cleaner",
+      "count": 10
+    },
+    {
+      "name": "Toothpaste & Oral Care",
+      "count": 16
+    },
+    {
+      "name": "Uncategorized",
+      "count": 11
+    },
+    {
+      "name": "Unilever",
+      "count": 33
+    },
+    {
+      "name": "Vegetables",
+      "count": 27
+    },
+    {
+      "name": "Water",
+      "count": 11
+    },
+    {
+      "name": "Yogurt",
+      "count": 6
+    }
+  ],
+  "sidebarTags": [
+    {
+      "name": "7up",
+      "link": "https://aamaderbazar.com/product-tag/7up/"
+    },
+    {
+      "name": "ada",
+      "link": "https://aamaderbazar.com/product-tag/ada/"
+    },
+    {
+      "name": "atta",
+      "link": "https://aamaderbazar.com/product-tag/atta/"
+    },
+    {
+      "name": "bathing soap",
+      "link": "https://aamaderbazar.com/product-tag/bathing-soap/"
+    },
+    {
+      "name": "biscuit",
+      "link": "https://aamaderbazar.com/product-tag/biscuit/"
+    },
+    {
+      "name": "bottle",
+      "link": "https://aamaderbazar.com/product-tag/bottle/"
+    },
+    {
+      "name": "chanachur",
+      "link": "https://aamaderbazar.com/product-tag/chanachur/"
+    },
+    {
+      "name": "chilli powder",
+      "link": "https://aamaderbazar.com/product-tag/chilli-powder/"
+    },
+    {
+      "name": "chips",
+      "link": "https://aamaderbazar.com/product-tag/chips/"
+    },
+    {
+      "name": "coca cola",
+      "link": "https://aamaderbazar.com/product-tag/coca-cola/"
+    },
+    {
+      "name": "coconut oil",
+      "link": "https://aamaderbazar.com/product-tag/coconut-oil/"
+    },
+    {
+      "name": "Dano",
+      "link": "https://aamaderbazar.com/product-tag/dano/"
+    },
+    {
+      "name": "detergent powder",
+      "link": "https://aamaderbazar.com/product-tag/detergent-powder/"
+    },
+    {
+      "name": "dettol",
+      "link": "https://aamaderbazar.com/product-tag/dettol/"
+    },
+    {
+      "name": "dhonia",
+      "link": "https://aamaderbazar.com/product-tag/dhonia/"
+    },
+    {
+      "name": "diaper",
+      "link": "https://aamaderbazar.com/product-tag/diaper/"
+    },
+    {
+      "name": "Diploma",
+      "link": "https://aamaderbazar.com/product-tag/diploma/"
+    },
+    {
+      "name": "Dove",
+      "link": "https://aamaderbazar.com/product-tag/dove/"
+    },
+    {
+      "name": "dove soap",
+      "link": "https://aamaderbazar.com/product-tag/dove-soap/"
+    },
+    {
+      "name": "garlic",
+      "link": "https://aamaderbazar.com/product-tag/garlic/"
+    },
+    {
+      "name": "ghee",
+      "link": "https://aamaderbazar.com/product-tag/ghee/"
+    },
+    {
+      "name": "ginger",
+      "link": "https://aamaderbazar.com/product-tag/ginger/"
+    },
+    {
+      "name": "Gren Tea",
+      "link": "https://aamaderbazar.com/product-tag/gren-tea/"
+    },
+    {
+      "name": "handwash",
+      "link": "https://aamaderbazar.com/product-tag/handwash/"
+    },
+    {
+      "name": "ispahani",
+      "link": "https://aamaderbazar.com/product-tag/ispahani/"
+    },
+    {
+      "name": "K&K",
+      "link": "https://aamaderbazar.com/product-tag/kk/"
+    },
+    {
+      "name": "lifebuoy",
+      "link": "https://aamaderbazar.com/product-tag/lifebuoy/"
+    },
+    {
+      "name": "lux",
+      "link": "https://aamaderbazar.com/product-tag/lux/"
+    },
+    {
+      "name": "maida",
+      "link": "https://aamaderbazar.com/product-tag/maida/"
+    },
+    {
+      "name": "mango pickle",
+      "link": "https://aamaderbazar.com/product-tag/mango-pickle/"
+    },
+    {
+      "name": "miniket",
+      "link": "https://aamaderbazar.com/product-tag/miniket/"
+    },
+    {
+      "name": "mosur dal",
+      "link": "https://aamaderbazar.com/product-tag/mosur-dal/"
+    },
+    {
+      "name": "mr. noodles",
+      "link": "https://aamaderbazar.com/product-tag/mr-noodles/"
+    },
+    {
+      "name": "mustard",
+      "link": "https://aamaderbazar.com/product-tag/mustard/"
+    },
+    {
+      "name": "parachute",
+      "link": "https://aamaderbazar.com/product-tag/parachute/"
+    },
+    {
+      "name": "Pepsi",
+      "link": "https://aamaderbazar.com/product-tag/pepsi/"
+    },
+    {
+      "name": "rice",
+      "link": "https://aamaderbazar.com/product-tag/rice/"
+    },
+    {
+      "name": "Sepnil",
+      "link": "https://aamaderbazar.com/product-tag/sepnil/"
+    },
+    {
+      "name": "seylon",
+      "link": "https://aamaderbazar.com/product-tag/seylon/"
+    },
+    {
+      "name": "shampoo",
+      "link": "https://aamaderbazar.com/product-tag/shampoo/"
+    },
+    {
+      "name": "Sprite",
+      "link": "https://aamaderbazar.com/product-tag/sprite/"
+    },
+    {
+      "name": "sunsilk",
+      "link": "https://aamaderbazar.com/product-tag/sunsilk/"
+    },
+    {
+      "name": "tea",
+      "link": "https://aamaderbazar.com/product-tag/tea/"
+    },
+    {
+      "name": "turmeric",
+      "link": "https://aamaderbazar.com/product-tag/turmeric/"
+    },
+    {
+      "name": "yogurt",
+      "link": "https://aamaderbazar.com/product-tag/yogurt/"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "productId": "5778",
+      "title": "Parachute Naturale Shampoo Onion Advanced Hair Fall Control – 345 ml",
+      "price": "৳ 390.00",
+      "priceNumeric": 390,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/parachute-naturale-shampoo-onion-advanced-hair-fall-control-345-ml/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2025/01/download-25.jpeg",
+      "imageAlt": "Parachute Naturale Shampoo Onion Advanced Hair Fall Control - 345 ml",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "Parachute Naturale Shampoo Onion Advanced Hair Fall Control - 345 ml",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Personal Care",
+        "simple",
+        "shampoo",
+        "onion",
+        "hair",
+        "fall",
+        "control"
+      ],
+      "gtmData": {
+        "internal_id": 5778,
+        "item_id": 5778,
+        "item_name": "Parachute Naturale Shampoo Onion Advanced Hair Fall Control - 345 ml",
+        "sku": "Parachute Naturale Shampoo Onion Advanced Hair Fall Control - 345 ml",
+        "price": 390,
+        "stocklevel": 22,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Personal Care",
+        "id": 5778,
+        "productlink": "https://aamaderbazar.com/product/parachute-naturale-shampoo-onion-advanced-hair-fall-control-345-ml/",
+        "item_list_name": "Search Results",
+        "index": 1,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 2,
+      "productId": "5401",
+      "title": "New Onion Local (Desi Peyaj Notun): 1KG Special Offer!",
+      "price": "৳ 65.00",
+      "priceNumeric": 65,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/new-onion-local-desi-peyaj-notun-1kg-special-offer/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/12/fresh-onion-1000x1000-1-300x300.webp",
+      "imageAlt": "New Onion Local (Desi Peyaj Notun): 1KG Special Offer!",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "CE-ONNL-1KG-N-SPO",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Cooking Essentials",
+        "simple",
+        "onion",
+        "local",
+        "desi",
+        "peyaj"
+      ],
+      "gtmData": {
+        "internal_id": 5401,
+        "item_id": 5401,
+        "item_name": "New Onion Local  (Desi Peyaj Notun): 1KG Special Offer!",
+        "sku": "CE-ONNL-1KG-N-SPO",
+        "price": 65,
+        "stocklevel": 363,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Cooking Essentials",
+        "id": 5401,
+        "productlink": "https://aamaderbazar.com/product/new-onion-local-desi-peyaj-notun-1kg-special-offer/",
+        "item_list_name": "Search Results",
+        "index": 2,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 3,
+      "productId": "4546",
+      "title": "Onion Desi: 500 gm",
+      "price": "৳ 25.00\nOriginal price was: ৳ 25.00.\n৳ 22.00\nCurrent price is: ৳ 22.00.",
+      "priceNumeric": 25.0025,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/onion-local-desi-peyaj-1kg-special-offer-copy/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/08/Imported-Onion-300x300.jpg",
+      "imageAlt": "Onion Desi: 500 gm",
+      "isOnSale": true,
+      "saleBadge": "Sale!",
+      "sku": "CE-ONNL-500gm-IM",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Spices (Ada,Rosun etc.)",
+        "simple",
+        "onion",
+        "desi"
+      ],
+      "gtmData": {
+        "internal_id": 4546,
+        "item_id": 4546,
+        "item_name": "Onion Desi: 500 gm",
+        "sku": "CE-ONNL-500gm-IM",
+        "price": 22,
+        "stocklevel": 44,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Spices (Ada,Rosun etc.)",
+        "id": 4546,
+        "productlink": "https://aamaderbazar.com/product/onion-local-desi-peyaj-1kg-special-offer-copy/",
+        "item_list_name": "Search Results",
+        "index": 3,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 4,
+      "productId": "3394",
+      "title": "Onion Local (Desi Peyaj): 1KG Special Offer!",
+      "price": "৳ 60.00",
+      "priceNumeric": 60,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/onion-local-desi-peyaj-1kg-special-offer/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/04/8-300x300.webp",
+      "imageAlt": "Onion",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "CE-ONNL-1KG-D-SPO",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Spices (Ada,Rosun etc.)",
+        "simple",
+        "onion",
+        "local",
+        "desi",
+        "peyaj"
+      ],
+      "gtmData": {
+        "internal_id": 3394,
+        "item_id": 3394,
+        "item_name": "Onion Local (Desi Peyaj): 1KG Special Offer!",
+        "sku": "CE-ONNL-1KG-D-SPO",
+        "price": 60,
+        "stocklevel": 835,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Spices (Ada,Rosun etc.)",
+        "id": 3394,
+        "productlink": "https://aamaderbazar.com/product/onion-local-desi-peyaj-1kg-special-offer/",
+        "item_list_name": "Search Results",
+        "index": 4,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 5,
+      "productId": "2350",
+      "title": "Lay’s American Style Cream & Onion Chips:11.5g",
+      "price": "৳ 10.00",
+      "priceNumeric": 10,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/lays-american-style-cream-onion-chips11-5g/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/03/lays-11.5-300x300.webp",
+      "imageAlt": "LAY'S AMARICAN STYLE CREAM & ONION CHIPS",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "LAY'S-AMERICAN-STYLE-CREAM-ONION-11.5G",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Snacks & Instant Foods",
+        "simple",
+        "cream",
+        "onion",
+        "chips"
+      ],
+      "gtmData": {
+        "internal_id": 2350,
+        "item_id": 2350,
+        "item_name": "Lay's American Style Cream & Onion Chips:11.5g",
+        "sku": "LAY'S-AMERICAN-STYLE-CREAM-ONION-11.5G",
+        "price": 10,
+        "stocklevel": 116,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Snacks & Instant Foods",
+        "id": 2350,
+        "productlink": "https://aamaderbazar.com/product/lays-american-style-cream-onion-chips11-5g/",
+        "item_list_name": "Search Results",
+        "index": 5,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 6,
+      "productId": "2319",
+      "title": "Kurkure Cream and Onion Chips: 75g",
+      "price": "৳ 50.00",
+      "priceNumeric": 50,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/kurkure-cream-and-onion-chips-75g/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/03/cream-and-onion-75g.jpg",
+      "imageAlt": "KURKURE CREAM AND ONION CHIPS",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "KURKURE-CREAM-ONION-75G",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Snacks & Instant Foods",
+        "simple",
+        "cream",
+        "onion",
+        "chips"
+      ],
+      "gtmData": {
+        "internal_id": 2319,
+        "item_id": 2319,
+        "item_name": "Kurkure Cream and Onion Chips: 75g",
+        "sku": "KURKURE-CREAM-ONION-75G",
+        "price": 50,
+        "stocklevel": 3,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Snacks & Instant Foods",
+        "id": 2319,
+        "productlink": "https://aamaderbazar.com/product/kurkure-cream-and-onion-chips-75g/",
+        "item_list_name": "Search Results",
+        "index": 6,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 7,
+      "productId": "2315",
+      "title": "Kurkure Cream and Onion Chips: 37g",
+      "price": "৳ 25.00",
+      "priceNumeric": 25,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/kurkure-cream-and-onion-chips-37g/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/03/kurkure-american-style-cream-onion-chips-17-gm-300x300.jpg",
+      "imageAlt": "KURKURE CREAM ONION CHIPS",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "KURKURE-CREAM-ONION-37G",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Snacks & Instant Foods",
+        "simple",
+        "cream",
+        "onion",
+        "chips"
+      ],
+      "gtmData": {
+        "internal_id": 2315,
+        "item_id": 2315,
+        "item_name": "Kurkure Cream and Onion Chips: 37g",
+        "sku": "KURKURE-CREAM-ONION-37G",
+        "price": 25,
+        "stocklevel": 4,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Snacks & Instant Foods",
+        "id": 2315,
+        "productlink": "https://aamaderbazar.com/product/kurkure-cream-and-onion-chips-37g/",
+        "item_list_name": "Search Results",
+        "index": 7,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 8,
+      "productId": "2312",
+      "title": "Kurkure Cream and Onion Chips: 17g",
+      "price": "৳ 10.00",
+      "priceNumeric": 10,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/kurkure-spicy-chicken-flavour-chips-37g-2/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2024/03/kurkure-american-style-cream-onion-chips-17-gm-300x300.jpg",
+      "imageAlt": "KURKURE CREAM ONION CHIPS",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "KURKURE-CREAM-ONION-17G",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Snacks & Instant Foods",
+        "simple",
+        "cream",
+        "onion",
+        "chips"
+      ],
+      "gtmData": {
+        "internal_id": 2312,
+        "item_id": 2312,
+        "item_name": "Kurkure Cream and Onion Chips: 17g",
+        "sku": "KURKURE-CREAM-ONION-17G",
+        "price": 10,
+        "stocklevel": 19,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Snacks & Instant Foods",
+        "id": 2312,
+        "productlink": "https://aamaderbazar.com/product/kurkure-spicy-chicken-flavour-chips-37g-2/",
+        "item_list_name": "Search Results",
+        "index": 8,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    },
+    {
+      "id": 9,
+      "productId": "1116",
+      "title": "Panch Phoron /Pach Foron: 50gm",
+      "price": "৳ 30.00",
+      "priceNumeric": 30,
+      "currency": "BDT",
+      "link": "https://aamaderbazar.com/product/panch-phoron-pach-foron-50gm/",
+      "imageUrl": "https://aamaderbazar.com/wp-content/uploads/2023/08/panch-phoron-300x300.jpg",
+      "imageAlt": "panch phoron",
+      "isOnSale": false,
+      "saleBadge": "",
+      "sku": "CE-SPPF-50G-P",
+      "stockStatus": "instock",
+      "rating": "",
+      "ratingCount": "",
+      "categories": [],
+      "tags": [
+        "Spices (Ada,Rosun etc.)",
+        "simple"
+      ],
+      "gtmData": {
+        "internal_id": 1116,
+        "item_id": 1116,
+        "item_name": "Panch Phoron /Pach Foron: 50gm",
+        "sku": "CE-SPPF-50G-P",
+        "price": 30,
+        "stocklevel": 6,
+        "stockstatus": "instock",
+        "google_business_vertical": "retail",
+        "item_category": "Spices (Ada,Rosun etc.)",
+        "id": 1116,
+        "productlink": "https://aamaderbazar.com/product/panch-phoron-pach-foron-50gm/",
+        "item_list_name": "Search Results",
+        "index": 9,
+        "product_type": "simple",
+        "item_brand": ""
+      }
+    }
+  ]
+}

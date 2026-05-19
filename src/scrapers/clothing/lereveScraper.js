@@ -1,93 +1,73 @@
 /**
- * twelveScraper.js
- * Scrapes product data from twelvebd.com
+ * lereveScraper.js
+ * Scrapes product data from lerevecraze.com
  *
- * Platform: WooCommerce (Bangladeshi fashion brand "Twelve")
+ * Platform : WooCommerce on WordPress
+ * Browse URL: https://www.lerevecraze.com/product-category/panjabi/
+ * Search URL: https://www.lerevecraze.com/?s=<keyword>&post_type=product
+ *
  * Strategy:
- *  1. WooCommerce Store API: /wp-json/wc/store/v1/products (public, no auth)
- *  2. WooCommerce Products API: /wp-json/wc/v3/products
- *  3. DOM fallback: standard WooCommerce HTML product grid
+ *  1. WooCommerce Store REST API  → /wp-json/wc/store/v1/products
+ *  2. DOM fallback on WC product list markup (li.product, .woocommerce-loop-product__title)
  *
- * Known URL patterns:
- *   /shop                → all products
- *   /product-category/<slug>  → category listing
- *   /shop?page=N         → paginated
+ * Pagination: ?page=2 (WP standard) or API currentPage param
  */
 
-const { newPage } = require("../../browser/browserManager");
+const { newPage }                       = require("../../browser/browserManager");
 const { navigateTo, autoScroll, sleep } = require("../../browser/pageHelpers");
+const { injectSafeFetch }               = require("../../utils/safeFetch");
 
-const BASE_URL    = "https://twelvebd.com";
+const BASE_URL    = "https://www.lerevecraze.com";
 const DELAY       = parseInt(process.env.PAGE_DELAY) || 2000;
-const SOURCE_NAME = "twelvebd";
+const SOURCE_NAME = "lerevecraze";
 
-// ─── WooCommerce Store API ────────────────────────────────────────────────────
-
-async function fetchWooPage(page, endpoint, params = {}) {
-  const qs = new URLSearchParams({ per_page: 30, ...params }).toString();
-  const url = `${BASE_URL}${endpoint}?${qs}`;
-
-  return page.evaluate(async (apiUrl) => {
-    try {
-      const r = await fetch(apiUrl, { headers: { Accept: "application/json" } });
-      if (!r.ok) return null;
-      const ct = r.headers.get("content-type") || "";
-      if (!ct.includes("json")) return null;
-      const text = await r.text();
-      const first = text.trimStart()[0];
-      if (first !== "{" && first !== "[") return null;
-      try { return JSON.parse(text); } catch { return null; }
-    } catch { return null; }
-  }, url);
-}
+// ─── WooCommerce Store API normalizer ─────────────────────────────────────────
 
 function normalizeWooProduct(p) {
-  // WooCommerce Store API prices may be in minor units
-  const rawPrice  = p.prices?.price        ?? p.price         ?? "0";
-  const rawOrig   = p.prices?.regular_price ?? p.regular_price ?? rawPrice;
-  const divisor   = String(rawPrice).replace(".", "").length > 6 ? 100 : 1;
+  const price     = parseFloat(p.prices?.price)         / 100 || null;
+  const origPrice = parseFloat(p.prices?.regular_price) / 100 || null;
 
-  const price     = parseFloat(rawPrice) / divisor || null;
-  const origPrice = parseFloat(rawOrig)  / divisor || null;
-
-  // Extract size/color attributes
-  const attrs     = p.attributes || [];
-  const sizeAttr  = attrs.find((a) =>
-    /size|মাপ/i.test(a.name || a.slug || "")
-  );
-  const colorAttr = attrs.find((a) =>
-    /colo[u]?r|রঙ/i.test(a.name || a.slug || "")
-  );
-
-  const toArr = (v) =>
-    Array.isArray(v) ? v.map((x) => x.name || x).filter(Boolean)
-    : typeof v === "string" ? v.split(",").map((s) => s.trim()).filter(Boolean)
-    : null;
+  const imageUrl = p.images?.[0]?.src || "";
 
   return {
-    name:          p.name             || "",
+    name:          p.name || "",
     price,
-    originalPrice: origPrice !== price ? origPrice : null,
-    discount:      p.on_sale
-      ? (origPrice && price
-        ? `-${Math.round((1 - price / origPrice) * 100)}%`
-        : "On Sale")
+    originalPrice: origPrice && origPrice > price ? origPrice : null,
+    discount:      origPrice && price && origPrice > price
+      ? `-${Math.round((1 - price / origPrice) * 100)}%`
       : null,
-    sku:           p.sku              || null,
-    imageUrl:      p.images?.[0]?.src || "",
-    productUrl:    p.permalink        || `${BASE_URL}/?p=${p.id}`,
-    inStock:       p.is_in_stock      ?? true,
-    stockQuantity: p.stock_quantity   ?? null,
-    sizes:         toArr(sizeAttr?.terms  || sizeAttr?.options),
-    colors:        toArr(colorAttr?.terms || colorAttr?.options),
-    productType:   p.categories?.[0]?.name || null,
-    tags:          (p.tags || []).map((t) => t.name).join(", ") || null,
-    rating:        p.average_rating   || null,
-    reviewCount:   p.review_count     || null,
+    unit:          null,
+    sku:           p.sku || null,
+    imageUrl:      imageUrl.startsWith("//") ? "https:" + imageUrl : imageUrl,
+    productUrl:    p.permalink || "",
+    inStock:       p.is_in_stock ?? true,
   };
 }
 
-// ─── DOM Extractor (WooCommerce standard markup) ─────────────────────────────
+// ─── WooCommerce Store API fetch helper ───────────────────────────────────────
+
+async function fetchWooProducts(page, params = {}) {
+  const qs = new URLSearchParams({
+    per_page: 24,
+    page:     1,
+    ...params,
+  }).toString();
+
+  const url  = `${BASE_URL}/wp-json/wc/store/v1/products?${qs}`;
+  const data = await page.evaluate(async (endpoint) => {
+    try {
+      const r    = await fetch(endpoint, { headers: { Accept: "application/json" } });
+      const text = await r.text();
+      const first = text.trimStart()[0];
+      if (first !== "[" && first !== "{") return null;
+      return JSON.parse(text);
+    } catch { return null; }
+  }, url);
+
+  return Array.isArray(data) ? data : data?.products || null;
+}
+
+// ─── WooCommerce DOM extractor ────────────────────────────────────────────────
 
 function extractWooProducts() {
   const cleanPrice = (raw) => {
@@ -95,186 +75,78 @@ function extractWooProducts() {
     return isNaN(n) ? null : n;
   };
 
-  const selectors = [
-    "ul.products li.product",
-    ".products .product",
-    ".woocommerce-loop-product",
-    "[class*='product-grid'] [class*='product']",
-    "[class*='product-item']",
-  ];
-
-  let cards = [];
-  for (const sel of selectors) {
-    const found = document.querySelectorAll(sel);
-    if (found.length > 2) { cards = found; break; }
-  }
+  // WooCommerce standard product list selectors
+  let cards = document.querySelectorAll(".lrv-product-grid");
+  if (!cards.length) cards = document.querySelectorAll(".products li");
+  if (!cards.length) cards = document.querySelectorAll("article.product");
+  if (!cards.length) cards = document.querySelectorAll("[class*='product-item']");
 
   return Array.from(cards).map((card) => {
-    const nameEl    = card.querySelector(
-      ".woocommerce-loop-product__title, .product-title, h2, h3"
+    const nameEl   = card.querySelector(
+      ".text-truncate a"
     );
-    const priceIns  = card.querySelector("ins .woocommerce-Price-amount");
-    const priceDef  = card.querySelector(".price > .woocommerce-Price-amount, .woocommerce-Price-amount");
-    const origEl    = card.querySelector("del .woocommerce-Price-amount");
-    const badgeEl   = card.querySelector(".onsale, .badge, [class*='discount']");
-    const imgEl     = card.querySelector("img");
-    const linkEl    = card.querySelector("a.woocommerce-loop-product__link, a");
+    const linkEl   = card.querySelector("a.woocommerce-loop-product__link, a");
+    const priceEl  = card.querySelector("ins .woocommerce-Price-amount, .price ins, .price > .amount");
+    const origEl   = card.querySelector("del .woocommerce-Price-amount, .price del");
+    const anyPrice = card.querySelector(".woocommerce-Price-amount, .price .amount, .price");
+    const imgEl    = card.querySelector("img");
+    const badgeEl  = card.querySelector(".onsale, [class*='badge'], [class*='sale']");
 
     const name = nameEl?.textContent?.trim() || "";
     if (!name) return null;
 
-    const price     = cleanPrice((priceIns || priceDef)?.textContent);
+    const price    = cleanPrice(priceEl?.textContent  || anyPrice?.textContent);
     const origPrice = cleanPrice(origEl?.textContent);
 
     return {
       name,
       price,
-      originalPrice: origPrice,
-      discount:
-        badgeEl?.textContent?.trim() ||
-        (origPrice && price
+      originalPrice: origPrice && origPrice > price ? origPrice : null,
+      discount:      badgeEl?.textContent?.trim()
+        || (origPrice && price && origPrice > price
           ? `-${Math.round((1 - price / origPrice) * 100)}%`
           : null),
+      unit:      null,
       imageUrl:  imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
       productUrl: linkEl?.href || "",
     };
   }).filter(Boolean);
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Browse ───────────────────────────────────────────────────────────────────
 
-/**
- * Scrape TwelveBD products.
- * @param {string} shopUrl  e.g. "https://twelvebd.com/shop" or a category URL
- * @param {number} pages
- */
-async function scrapeTwelve(shopUrl = `${BASE_URL}/shop`, pages = 1) {
+async function scrapeLeReve(categoryUrl = `${BASE_URL}/product-category/panjabi/`, pages = 1) {
   const page    = await newPage();
   const results = [];
 
   try {
-    await navigateTo(page, shopUrl);
+    await injectSafeFetch(page);
+    await navigateTo(page, categoryUrl);
 
-    // 1. Try WooCommerce Store API
-    let apiWorked = false;
-    const storeData = await fetchWooPage(page, "/wp-json/wc/store/v1/products", { page: 1 });
+    // Strategy 1 — WooCommerce Store API with category slug
+    const slug    = categoryUrl.match(/product-category\/([^/]+)/)?.[1] || "";
+    const apiData = await fetchWooProducts(page, { category: slug, page: 1 });
 
-    if (Array.isArray(storeData) && storeData.length > 0) {
-      results.push(...storeData.map(normalizeWooProduct));
-      apiWorked = true;
-
+    if (apiData && apiData.length > 0) {
+      results.push(...apiData.map(normalizeWooProduct));
       for (let p = 2; p <= pages; p++) {
-        const more = await fetchWooPage(page, "/wp-json/wc/store/v1/products", { page: p });
-        if (!Array.isArray(more) || more.length === 0) break;
-        results.push(...more.map(normalizeWooProduct));
-        await sleep(DELAY);
-      }
-    }
-
-    // 2. DOM fallback
-    if (!apiWorked) {
-      for (let p = 1; p <= pages; p++) {
-        const url = p === 1
-          ? shopUrl
-          : shopUrl.includes("?")
-            ? `${shopUrl}&paged=${p}`
-            : `${shopUrl}/page/${p}/`;
-        if (p > 1) await navigateTo(page, url);
-        await autoScroll(page);
-        const products = await page.evaluate(extractWooProducts);
-        if (products.length === 0) break;
-        results.push(...products);
-        await sleep(DELAY);
-      }
-    }
-  } finally {
-    await page.close();
-  }
-
-  return results.map((p) => ({ ...p, source: SOURCE_NAME, category: "Clothing" }));
-}
-
-/**
- * Get WooCommerce product categories for TwelveBD.
- */
-async function getTwelveCategories() {
-  const page = await newPage();
-  try {
-    await navigateTo(page, `${BASE_URL}/shop`);
-
-    // Try WooCommerce categories API
-    const cats = await fetchWooPage(page, "/wp-json/wc/store/v1/products/categories", {
-      per_page: 50,
-    });
-
-    if (Array.isArray(cats) && cats.length > 0) {
-      return cats.map((c) => ({
-        id:    c.id,
-        name:  c.name,
-        slug:  c.slug,
-        count: c.count,
-        url:   `${BASE_URL}/product-category/${c.slug}`,
-      }));
-    }
-
-    // DOM fallback for categories
-    return page.evaluate(() => {
-      const links = document.querySelectorAll(
-        ".product-categories a, .widget_product_categories a, [class*='category'] a"
-      );
-      return Array.from(links).map((a) => ({
-        name: a.textContent.trim(),
-        url:  a.href,
-      })).filter((c) => c.name && c.url.includes("twelvebd.com"));
-    });
-  } finally {
-    await page.close();
-  }
-}
-
-
-/**
- * Search TwelveBD products by keyword.
- * Uses WooCommerce Store API search param, falls back to WordPress search URL.
- * @param {string} keyword
- * @param {number} pages
- */
-async function searchTwelve(keyword, pages = 1) {
-  const page    = await newPage();
-  const results = [];
-
-  try {
-    // Navigate to WP search first to set context
-    await navigateTo(page, `${BASE_URL}/?s=${encodeURIComponent(keyword)}&post_type=product`);
-
-    // Try WooCommerce Store API with search param
-    const apiBase = `${BASE_URL}/wp-json/wc/store/v1/products?search=${encodeURIComponent(keyword)}&per_page=30`;
-    const first   = await fetchWooPage(page, "/wp-json/wc/store/v1/products", {
-      search: keyword, per_page: 30, page: 1,
-    });
-
-    if (Array.isArray(first) && first.length > 0) {
-      results.push(...first.map(normalizeWooProduct));
-      for (let p = 2; p <= pages; p++) {
-        const more = await fetchWooPage(page, "/wp-json/wc/store/v1/products", {
-          search: keyword, per_page: 30, page: p,
-        });
-        if (!Array.isArray(more) || more.length === 0) break;
+        const more = await fetchWooProducts(page, { category: slug, page: p });
+        if (!more || !more.length) break;
         results.push(...more.map(normalizeWooProduct));
         await sleep(DELAY);
       }
     } else {
-      // DOM fallback — WP renders results in same WooCommerce grid
+      // Strategy 2 — DOM
       await autoScroll(page);
       const dom = await page.evaluate(extractWooProducts);
       results.push(...dom);
 
       for (let p = 2; p <= pages; p++) {
-        const url = `${BASE_URL}/page/${p}/?s=${encodeURIComponent(keyword)}&post_type=product`;
-        await navigateTo(page, url);
+        const sep = categoryUrl.includes("?") ? "&" : "?";
+        await navigateTo(page, `${categoryUrl}${sep}page=${p}`);
         await autoScroll(page);
         const more = await page.evaluate(extractWooProducts);
-        if (more.length === 0) break;
+        if (!more.length) break;
         results.push(...more);
         await sleep(DELAY);
       }
@@ -286,4 +158,99 @@ async function searchTwelve(keyword, pages = 1) {
   return results.map((p) => ({ ...p, source: SOURCE_NAME, category: "Clothing" }));
 }
 
-module.exports = { scrapeTwelve, getTwelveCategories, searchTwelve };
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+async function searchLeReve(keyword, pages = 1) {
+  if (!keyword?.trim()) return [];
+
+  const page    = await newPage();
+  const results = [];
+
+  try {
+    await injectSafeFetch(page);
+
+    // Navigate to WP product search URL
+    const searchUrl = `${BASE_URL}/product-category/${encodeURIComponent(keyword.trim())}/`;
+    await navigateTo(page, searchUrl);
+    await autoScroll(page);
+    await sleep(800);
+    console.log(searchUrl)
+
+    // Strategy 1 — WooCommerce Store API with search param
+    const apiData = await fetchWooProducts(page, { search: keyword.trim(), page: 1 });
+
+    if (apiData && apiData.length > 0) {
+      results.push(...apiData.map(normalizeWooProduct));
+      for (let p = 2; p <= pages; p++) {
+        const more = await fetchWooProducts(page, { search: keyword.trim(), page: p });
+        if (!more || !more.length) break;
+        results.push(...more.map(normalizeWooProduct));
+        await sleep(DELAY);
+      }
+    } else {
+      // Strategy 2 — DOM fallback on search results page
+      const dom = await page.evaluate(extractWooProducts);
+      results.push(...dom);
+
+      for (let p = 2; p <= pages; p++) {
+        await navigateTo(page, `${searchUrl}&paged=${p}`);
+        await autoScroll(page);
+        const more = await page.evaluate(extractWooProducts);
+        if (!more.length) break;
+        results.push(...more);
+        await sleep(DELAY);
+      }
+    }
+  } finally {
+    await page.close();
+  }
+
+  // Deduplicate by name
+  const seen = new Set();
+  return results
+    .filter((p) => {
+      if (!p.name) return false;
+      const k = p.name.toLowerCase().trim();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .map((p) => ({ ...p, source: SOURCE_NAME, category: "Clothing" }));
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+async function getLeReveCategories() {
+  const page = await newPage();
+  try {
+    await navigateTo(page, BASE_URL);
+    const cats = await page.evaluate(async () => {
+      // Try WC Store API
+      try {
+        const r    = await fetch("/wp-json/wc/store/v1/products/categories?per_page=50");
+        const data = await r.json();
+        if (Array.isArray(data)) {
+          return data.map((c) => ({
+            name:  c.name,
+            slug:  c.slug,
+            count: c.count,
+            url:   `${location.origin}/product-category/${c.slug}/`,
+          }));
+        }
+      } catch {}
+
+      // DOM fallback — nav/menu links
+      const links = document.querySelectorAll(
+        ".product-categories a, .widget_product_categories a, nav a, .navbar a"
+      );
+      return Array.from(links)
+        .map((a) => ({ name: a.textContent.trim(), url: a.href }))
+        .filter((c) => c.name && c.url.includes("lerevecraze.com"));
+    });
+    return cats;
+  } finally {
+    await page.close();
+  }
+}
+
+module.exports = { scrapeLeReve, searchLeReve, getLeReveCategories };

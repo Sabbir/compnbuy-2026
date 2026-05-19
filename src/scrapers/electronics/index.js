@@ -3,42 +3,43 @@
  * Unified entry point for all Electronics scrapers.
  *
  * Supported sources:
- *   startech  → startech.com.bd  (Custom PHP)
- *   ryans     → ryans.com        (Custom PHP / OpenCart-like)
- *   vertech   → vertech.com.bd   (WooCommerce)
- *   all       → all three in parallel
+ *   startech    → startech.com.bd   (Custom PHP)
+ *   ryans       → ryans.com         (Custom PHP / Laravel)
+ *   techlandbd  → techlandbd.com    (Laravel + Livewire)  ← replaces vertech
+ *   all         → all three in parallel
  */
 
-const { scrapeStarTech, searchStarTech, getStarTechCategories } = require("./startechScraper");
-const { scrapeRyans,    searchRyans,    getRyansCategories }     = require("./ryansScraper");
-const { scrapeVertech,                  getVertechCategories }   = require("./vertechScraper");
+const { scrapeStarTech,    searchStarTech,    getStarTechCategories }    = require("./startechScraper");
+const { scrapeRyans,       searchRyans,       getRyansCategories }        = require("./ryansScraper");
+const { scrapeTechlandbd,  searchTechlandbd,  getTechlandbdCategories }   = require("./techlandbdScraper");
 
 const SOURCE_DEFAULTS = {
-  startech: "https://www.startech.com.bd/laptop-notebook",
-  ryans:    "https://www.ryans.com/laptops",
-  vertech:  "https://www.vertech.com.bd/shop",
+  startech:   "https://www.startech.com.bd/laptop-notebook",
+  ryans:      "https://www.ryans.com/category/desktop-component-mouse",
+  techlandbd: "https://www.techlandbd.com/search/advance/product/result/laptop",
 };
 
 const SCRAPERS = {
-  startech: scrapeStarTech,
-  ryans:    scrapeRyans,
-  vertech:  scrapeVertech,
+  startech:   scrapeStarTech,
+  ryans:      scrapeRyans,
+  techlandbd: scrapeTechlandbd,
 };
 
 const SEARCH_FNS = {
-  startech: searchStarTech,
-  ryans:    searchRyans,
+  startech:   searchStarTech,
+  ryans:      searchRyans,
+  techlandbd: searchTechlandbd,
 };
 
 const CATEGORY_FETCHERS = {
-  startech: getStarTechCategories,
-  ryans:    getRyansCategories,
-  vertech:  getVertechCategories,
+  startech:   getStarTechCategories,
+  ryans:      getRyansCategories,
+  techlandbd: getTechlandbdCategories,
 };
 
 /**
  * Scrape a single electronics source.
- * @param {"startech"|"ryans"|"vertech"} source
+ * @param {"startech"|"ryans"|"techlandbd"} source
  * @param {string} url    optional URL override
  * @param {number} pages
  */
@@ -55,7 +56,7 @@ async function scrapeElectronicsSource(source, url, pages = 1) {
 /**
  * Search across one or all electronics sources.
  * @param {string} keyword
- * @param {"startech"|"ryans"|"all"} source
+ * @param {"startech"|"ryans"|"techlandbd"|"all"} source
  * @param {number} pages
  */
 async function searchElectronics(keyword, source = "all", pages = 1) {
@@ -120,6 +121,6 @@ module.exports = {
   scrapeAllElectronics,
   searchElectronics,
   getElectronicsCategories,
-  SOURCES:          Object.keys(SCRAPERS),
+  SOURCES:         Object.keys(SCRAPERS),
   SOURCE_DEFAULTS,
 };

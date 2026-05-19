@@ -1,0 +1,470 @@
+{
+  "scrapedDate": "2026-05-07T03:54:02.801Z",
+  "totalProducts": 20,
+  "products": [
+    {
+      "id": 1,
+      "name": "Off-white Cotton Saree",
+      "price": "4291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17062/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/f1e887a6-bb5c-4d47-9d7d-4fced429fa85-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/a0c7de93-b41d-4f5b-8653-f98a7cfc6923-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/711c4f53-3fec-46e6-8e53-1a8297f46257-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Off-white"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17062/"
+    },
+    {
+      "id": 2,
+      "name": "Yellow Cotton Saree",
+      "price": "3291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17147/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/5606c324-b882-424a-92ce-bdb4963d3d12-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/5caddf49-71e4-4502-820d-48526a35c6df-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/3def0b98-861b-427e-966b-13134cefa186-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/a3da6680-49e6-46d8-9006-4385cf34ba87-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Yellow"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17147/"
+    },
+    {
+      "id": 3,
+      "name": "Saree",
+      "price": "4491",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr16991/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/7d7c1efa-76ff-4a62-ae37-6662ff750b61-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/de0518aa-7fb0-41a1-bd87-608a5637fd37-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/d8d494c6-79d6-4f6c-9236-eb243105dd8e-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/dec2f980-6ca7-47b8-ba06-c994d62e47c1-370x499.jpg"
+      ],
+      "tags": [],
+      "fullProductUrl": "/product/lshr16991/"
+    },
+    {
+      "id": 4,
+      "name": "Mint Green Cotton Saree",
+      "price": "4091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr15400/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/cfac50b7-7a3f-41aa-9d9b-294b85eabd99-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/206af52f-81f0-4079-9ed4-75368ba50020-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/daff414b-567c-434a-9667-71d2bb373be5-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Mint Green"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr15400/"
+    },
+    {
+      "id": 5,
+      "name": "Gray Cotton Check Saree",
+      "price": "2091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17169/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/fc9b70c5-3ec3-44b6-8c43-142263cd4aee-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/284dd5cd-10fd-4221-9d4d-fd3e8c61edbc-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/f75bbae0-30f5-40be-a1b0-d9b546d5ba9a-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Gray Cotton Check"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17169/"
+    },
+    {
+      "id": 6,
+      "name": "Green Cotton Saree",
+      "price": "3291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17145/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/e8f1f676-c1a3-41f5-b982-fd05ea8b8142-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/0db4d26c-47a9-4caf-bc58-e2eea663a6af-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/48976f46-d6f2-463e-a1a1-c56777c28225-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/7212c562-1b39-41a0-ad28-91f25ac05fbc-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Green"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17145/"
+    },
+    {
+      "id": 7,
+      "name": "Blue Half-silk Saree",
+      "price": "3091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17171/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/807be6ec-a651-46f9-97b0-ff621b22cf2f-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/706084be-a783-4a28-ae6f-5afd27b8e8d6-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/db84d93e-2f9e-4191-84e6-03bfd1871ebc-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Blue"
+        },
+        {
+          "type": "Fabric",
+          "value": "Half Silk"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17171/"
+    },
+    {
+      "id": 8,
+      "name": "Teal Cotton Saree",
+      "price": "2091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17164/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/9ef6d598-b463-4eac-9640-88dff2ecb6af-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/9636560f-6e01-423e-a5af-75dc7762704b-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/7387efdc-fef9-431b-8566-7c7dbee0c9a3-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Teal"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17164/"
+    },
+    {
+      "id": 9,
+      "name": "Green Cotton Saree",
+      "price": "2091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17166/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/fdeca4c3-6819-4c9c-97f0-7b1d302398a2-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/86f7cb73-ca2d-4007-81a9-3e6bdc9ca45c-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/9d61a829-1717-428d-b188-4c2d65ff9691-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/88618aba-6afd-4a3b-ae52-b5d040f3beae-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Green"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17166/"
+    },
+    {
+      "id": 10,
+      "name": "Purple Cotton Saree",
+      "price": "2091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17165/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/2fa6b1ba-978b-42a4-8907-e04619f57d1c-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/302d9b15-9e17-401d-b115-af8c09205f16-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/7f26fee6-4470-425f-a415-e6b382b0b7d9-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Purple"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17165/"
+    },
+    {
+      "id": 11,
+      "name": "Green Half-silk Saree",
+      "price": "3091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17159/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/e959477d-d6a4-4427-ae1b-c46699340608-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/c86322d6-0b6a-483b-8561-b0bf83a54f15-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/e622e026-601d-4932-bce2-b995bc5be1da-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Green"
+        },
+        {
+          "type": "Fabric",
+          "value": "Half Silk"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17159/"
+    },
+    {
+      "id": 12,
+      "name": "Teal Half Silk Saree",
+      "price": "3091",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17157/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/12495981-890d-46e3-8ea4-81bec6f45618-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/e4c1fbcd-360a-408c-99a5-d6b311da8de8-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/8993ecb3-b614-42bf-a730-28f073f93cde-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/2a597b5e-ed52-452d-ade4-ca9b5b3e9c99-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Teal Half Silk"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17157/"
+    },
+    {
+      "id": 13,
+      "name": "Yellow Cotton Saree",
+      "price": "3291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17141/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/d1e2ec5e-a79e-4c8c-88a3-91d729592767-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/08387d1c-27b1-49c8-9d3e-193646548eba-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/bcfa0c6f-bafa-4b99-821b-4ba1b52805f0-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Yellow"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17141/"
+    },
+    {
+      "id": 14,
+      "name": "Blue Cotton Saree",
+      "price": "3291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17140/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/11093bce-7aad-420a-91d2-99948759d469-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/704f64b8-a3b2-402b-a00b-a7734a23836d-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/b0bc7575-0467-4c22-92ba-aa346fe77f6f-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Blue"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17140/"
+    },
+    {
+      "id": 15,
+      "name": "Sweet Pink Cotton Saree",
+      "price": "3291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17137/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/ca758d62-990c-40c5-a2f3-58c155ddca16-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/610e653b-4d9d-4664-9202-e1c973294ac7-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/2908a936-9b96-4989-b3e2-a4e8d4f377cc-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Sweet Pink"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17137/"
+    },
+    {
+      "id": 16,
+      "name": "Red Cotton Saree",
+      "price": "3291",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17136/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/6d4011ee-5b06-4454-9caa-37afb307f87d-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/3b397562-5f36-4c05-b1e6-4e310e5f6db3-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/c96d8e5d-026e-4d70-8793-2abdb09d6979-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Red"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17136/"
+    },
+    {
+      "id": 17,
+      "name": "Saree",
+      "price": "3695",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17092/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/1269aef8-c875-476c-a072-78b659c450e8-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/1d62a325-05a8-452d-9db6-6a13a7ece5df-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/8d748002-32b3-48e9-8788-0e4e8b639d8e-370x499.jpg"
+      ],
+      "tags": [],
+      "fullProductUrl": "/product/lshr17092/"
+    },
+    {
+      "id": 18,
+      "name": "Yellow Cotton Saree",
+      "price": "3991",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17091/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/47ab5c9b-9de5-4162-8bdf-8c254967e4f0-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/99ef738f-89ab-4304-93ff-575b2b4927c4-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/bc6700a1-2bd6-4f53-8bc6-60b08fd80b0c-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Yellow"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17091/"
+    },
+    {
+      "id": 19,
+      "name": "Blue Cotton Saree",
+      "price": "3691",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17090/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/7ffd62f6-ae86-4798-b936-87b54bc42bba-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/185a6632-dc9d-4c1d-9ad1-11225e950dd5-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/3fce78d9-423b-4768-af7b-2dd7a9a68ade-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/b44a78a9-6fc5-4cad-a0fe-4b0ab0c8b74f-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Blue"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17090/"
+    },
+    {
+      "id": 20,
+      "name": "Yellow Cotton Nakshi Saree",
+      "price": "3991",
+      "currency": "BDT",
+      "url": "https://www.lerevecraze.com/product/lshr17058/",
+      "images": [
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/c6e54abb-efba-486a-975c-3fbdb950d31f-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/b816c746-8e2b-4131-a1e5-14e1c0ac3929-370x499.jpg",
+        "https://www.lerevecraze.com/wp-content/uploads/2025/07/b35b1b57-8ebd-4493-aa76-f3b77594f9e9-370x499.jpg"
+      ],
+      "tags": [
+        {
+          "type": "Color",
+          "value": "Yellow Cotton"
+        },
+        {
+          "type": "Fabric",
+          "value": "Cotton"
+        }
+      ],
+      "fullProductUrl": "/product/lshr17058/"
+    }
+  ],
+  "allTags": {
+    "Color": [
+      "Off-white",
+      "Yellow",
+      "Mint Green",
+      "Gray Cotton Check",
+      "Green",
+      "Blue",
+      "Teal",
+      "Purple",
+      "Teal Half Silk",
+      "Sweet Pink",
+      "Red",
+      "Yellow Cotton"
+    ],
+    "Fabric": [
+      "Cotton",
+      "Half Silk"
+    ]
+  }
+}

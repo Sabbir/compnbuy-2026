@@ -40,29 +40,53 @@ async function fetchShopifyPage(page, url) {
 }
 
 function normalizeShopifyProduct(p) {
-  const variant  = p.variants?.[0] || {};
-  const price    = parseFloat(variant.price)         || parseFloat(p.price) || null;
-  const origPrice = parseFloat(variant.compare_at_price) || null;
+  const variants = p.variants || [];
 
-  // Collect all unique sizes from variants
+  // ── Price range handling ──────────────────────────────────────────────────
+  // Shopify products.json: price fields are strings like "548.00" (already BDT).
+  // Some endpoints send paisa (integer > 50000). We detect and convert.
+  const parsePriceField = (val) => {
+    if (val == null) return null;
+    const n = parseFloat(val);
+    if (isNaN(n)) return null;
+    // Heuristic: if value is unreasonably large (>50000) it is in paisa
+    return n > 50000 ? n / 100 : n;
+  };
+
+  // Min current price and max compare_at_price across all variants
+  let minPrice = null, maxOrigPrice = null;
+  variants.forEach((v) => {
+    const vp = parsePriceField(v.price);
+    const vo = parsePriceField(v.compare_at_price);
+    if (vp != null && (minPrice === null || vp < minPrice)) minPrice = vp;
+    if (vo != null && (maxOrigPrice === null || vo > maxOrigPrice)) maxOrigPrice = vo;
+  });
+
+  // Fallback to product-level price if no variants
+  if (minPrice === null) minPrice = parsePriceField(p.price);
+
+  const price     = minPrice;
+  const origPrice = maxOrigPrice && maxOrigPrice > price ? maxOrigPrice : null;
+
+  // Price range: e.g. Tk 548 – Tk 598
+  const allPrices     = variants.map(v => parsePriceField(v.price)).filter(x => x != null);
+  const maxPrice      = allPrices.length ? Math.max(...allPrices) : null;
+  const hasPriceRange = maxPrice != null && maxPrice !== price;
+
+  // Unique sizes
   const sizes = [...new Set(
-    (p.variants || [])
-      .map(v => v.option1 || v.title)
-      .filter(s => s && s !== "Default Title")
+    variants.map(v => v.option1 || v.title).filter(s => s && s !== "Default Title")
   )];
 
-  // Collect all unique colors
-  const colors = [...new Set(
-    (p.variants || [])
-      .map(v => v.option2)
-      .filter(Boolean)
-  )];
+  // Unique colors
+  const colors = [...new Set(variants.map(v => v.option2).filter(Boolean))];
 
   return {
     name:          p.title                    || "",
     price,
-    originalPrice: origPrice > price ? origPrice : null,
-    discount:      origPrice > price
+    maxPrice:      hasPriceRange ? maxPrice : null,
+    originalPrice: origPrice,
+    discount:      origPrice && price
       ? `-${Math.round((1 - price / origPrice) * 100)}%`
       : null,
     vendor:        p.vendor                   || null,
@@ -73,69 +97,86 @@ function normalizeShopifyProduct(p) {
     imageUrl:      p.images?.[0]?.src         || p.featured_image || "",
     productUrl:    `${BASE_URL}/products/${p.handle}`,
     inStock:       p.available                ?? true,
-    variantCount:  (p.variants || []).length  || 1,
+    variantCount:  variants.length            || 1,
   };
 }
 
 // ─── DOM Fallback ─────────────────────────────────────────────────────────────
 
 function extractFromDom() {
+  // Parse the FIRST numeric value from a raw price string.
+  // Handles: "Tk 548", "Tk 548 – Tk 598", "548.00"
   const cleanPrice = (raw) => {
-    const n = parseFloat((raw || "").replace(/[^\d.]/g, ""));
+    if (!raw) return null;
+    const m = raw.replace(/[^\d.\s–-]/g, "").match(/[\d.]+/);
+    const n = m ? parseFloat(m[0]) : NaN;
+    return isNaN(n) ? null : n;
+  };
+
+  // Parse the LAST numeric value — used for the upper end of a price range.
+  const cleanPriceMax = (raw) => {
+    if (!raw) return null;
+    const matches = [...(raw.replace(/[^\d.\s–-]/g, "").matchAll(/[\d.]+/g))];
+    if (!matches.length) return null;
+    const n = parseFloat(matches[matches.length - 1][0]);
     return isNaN(n) ? null : n;
   };
 
   // Shopify themes use .product-item, .grid__item, or [class*="product-card"]
   const selectors = [
-    ".t4s-product",           // Main product wrapper
-    ".t4s-product-inner",
-    ".t4s-product-price",
+    ".product-item",
+    ".grid__item",
+    "[class*='product-card']",
+    "[class*='ProductCard']",
+    "[class*='product-grid'] li",
+    ".collection-grid__item",
+    "li[class*='item']",
   ];
 
   let cards = [];
   for (const sel of selectors) {
-    const found = document.querySelectorAll(sel+".t4s-col-item");
-    console.log(found)
+    const found = document.querySelectorAll(sel);
     if (found.length > 2) { cards = found; break; }
   }
 
   return Array.from(cards).map((card) => {
     const nameEl   = card.querySelector("[class*='title'], [class*='name'], h2, h3");
-    const priceEl  = card.querySelector(".t4s-product-price");
     const imgEl    = card.querySelector("img");
     const linkEl   = card.querySelector("a");
 
     const name = nameEl?.textContent?.trim() || "";
     if (!name) return null;
 
-    const origEl = priceEl.querySelector('del');
-    const insEl = priceEl.querySelector('ins')
+    // ── Price extraction ──────────────────────────────────────────────────
+    // Case 1: price range  → .t4s-price__sale (e.g. "Tk 548 – Tk 598")
+    // Case 2: sale price   → ins .money  (current)  + del .money (original)
+    // Case 3: single price → [class*='price'] first .money span
 
-    let regEl = '';
-    let salEl = '';
-    if (origEl && insEl) {
-          // Product is on sale
-          regEl = origEl.innerText.trim();
-          salEl = insEl.innerText.trim();
-      } else {
-          // Regular price
-          let res = [];
-          let num = priceEl.innerText;
-          if (num.includes("–")) {
-              const parts = num.split("–");
-              res = parts.map(part => part.trim());
-              salEl = res[1].trim();
-            } else {
-              // Handle case where no dash is present
-              salEl = num; // or handle differently based on your needs
-            }
-          
-      }
+    let price = null, maxPrice = null, origPrice = null;
+
+    const rangeEl = card.querySelector(".t4s-price__sale");
+    const insEl   = card.querySelector("ins");
+    const delEl   = card.querySelector("del");
+    const priceEl = card.querySelector("[data-pr-price], [class*='product-price']");
+
+    if (rangeEl) {
+      // "Tk 548 – Tk 598" — extract both ends
+      const rangeText = rangeEl.textContent || "";
+      price    = cleanPrice(rangeText);
+      maxPrice = cleanPriceMax(rangeText);
+      if (maxPrice === price) maxPrice = null;  // same value, not really a range
+    } else if (insEl) {
+      price     = cleanPrice(insEl.textContent);
+      origPrice = delEl ? cleanPrice(delEl.textContent) : null;
+    } else if (priceEl) {
+      price = cleanPrice(priceEl.textContent);
+    }
 
     return {
       name,
-      price:         cleanPrice(salEl),
-      originalPrice: cleanPrice(regEl),
+      price,
+      maxPrice:      maxPrice,
+      originalPrice: origPrice && origPrice > price ? origPrice : null,
       discount:      null,
       imageUrl:      imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
       productUrl:    linkEl?.href || "",
@@ -190,7 +231,6 @@ async function scrapeBlucheez(collectionUrl = `${BASE_URL}/collections/all`, pag
         if (p > 1) await navigateTo(page, url);
         await autoScroll(page);
         const products = await page.evaluate(extractFromDom);
-        console.log(products)
         if (products.length === 0) break;
         results.push(...products);
         if (p < pages) await sleep(DELAY);
@@ -239,12 +279,11 @@ async function searchBlucheez(keyword, pages = 1) {
     await navigateTo(page, searchUrl);
 
     // Try Shopify products.json filtered by search (no native filter, use suggest API)
-    const suggestUrl = `${BASE_URL}/search?q=${encodeURIComponent(keyword)}`;
+    const suggestUrl = `${BASE_URL}/search/suggest.json?q=${encodeURIComponent(keyword)}&resources[type]=product&resources[limit]=20`;
     const suggest    = await fetchShopifyPage(page, suggestUrl);
     const hits       = suggest?.resources?.results?.products || [];
 
     if (hits.length > 0) {
-      console.log(hits.length)
       results.push(...hits.map((p) => ({
         name:          p.title || "",
         price:         parseFloat(p.price)          || null,
@@ -265,15 +304,11 @@ async function searchBlucheez(keyword, pages = 1) {
         await autoScroll(page);
         const dom = await page.evaluate(extractFromDom);
         if (dom.length === 0) break;
-        
         results.push(...dom);
         if (p < pages) await sleep(DELAY);
       }
     }
-  } catch(error){
-    console.log(error.message)
-  }
-   finally {
+  } finally {
     await page.close();
   }
 

@@ -2,208 +2,193 @@
  * ryansScraper.js
  * Scrapes product data from ryans.com
  *
- * Platform: Custom PHP e-commerce (similar OpenCart-based structure to StarTech)
- * Strategy:
- *  1. XHR/API interception for JSON product data
- *  2. DOM parsing: product-layout / product-grid / product-thumb selectors
- *  3. Search via /index.php?route=product/search&search=<keyword>
+ * Platform: Custom PHP / Laravel (Bootstrap 5 frontend)
+ * Confirmed from live HTML analysis (May 2026)
  *
- * Pagination: ?page=N
- * Category URLs: /laptops, /desktops, /phones, /gaming, /components, etc.
+ * Search URL:  https://www.ryans.com/search?search=<keyword>
+ * Pagination:  ?search=<kw>&limit=30&page=N
+ * Category:    https://www.ryans.com/category/<slug>?page=N
+ *
+ * DOM selectors (all confirmed from live page):
+ *  Card wrapper  : div.cus-col-1.category-single-product > div.card.h-100
+ *  Product link  : div.image-box > a[href]
+ *  Product image : div.image-box > a > img.card-img-top
+ *  Full name     : h4.product-title > a[title]  (title attr = full un-truncated name)
+ *  SKU / ID      : span.found-text
+ *  Current price : p.pr-text.cat-sp-text         (card body)
+ *  Regular price : div.modal span.new-reg-text    (inline modal on same page)
+ *  Special price : div.modal span.new-sp-text     (inline modal on same page)
+ *  Discount note : span.fs-text
  */
 
-const { newPage }                      = require("../../browser/browserManager");
+const { newPage }                       = require("../../browser/browserManager");
 const { navigateTo, autoScroll, sleep } = require("../../browser/pageHelpers");
 
 const BASE_URL    = "https://www.ryans.com";
-const DELAY       = parseInt(process.env.PAGE_DELAY) || 2000;
+const DELAY       = parseInt(process.env.PAGE_DELAY) || 2500;
 const SOURCE_NAME = "ryans";
 
-// ─── XHR Interception ─────────────────────────────────────────────────────────
+// ─── DOM extractor (runs inside page context) ─────────────────────────────────
 
-async function interceptProducts(page, url) {
-  const captured = [];
-
-  page.on("response", async (res) => {
-    const resUrl = res.url();
-    const ct     = res.headers()["content-type"] || "";
-    if (ct.includes("json") && (
-      resUrl.includes("product") || resUrl.includes("catalog") ||
-      resUrl.includes("search") || resUrl.includes("category")
-    )) {
-      try {
-        const json  = await res.json();
-        const items = json.products || json.data?.products || json.data ||
-                      json.items || (Array.isArray(json) ? json : []);
-        if (items.length) captured.push(...items);
-      } catch { /* not parseable JSON */ }
-    }
-  });
-
-  await navigateTo(page, url);
-  await autoScroll(page);
-  await sleep(1200);
-
-  return captured;
-}
-
-// ─── DOM Extractor ─────────────────────────────────────────────────────────────
-
-function extractProducts() {
+function extractRyansProducts() {
   const cleanPrice = (raw) => {
     if (!raw) return null;
     const n = parseFloat(raw.replace(/[^\d.]/g, ""));
     return isNaN(n) ? null : n;
   };
 
-  // Ryans uses product-layout cards — OpenCart default + custom classes
-  const selectors = [
-    ".product-layout",
-    ".product-thumb",
-    "[class*='product-grid'] .product-layout",
-    ".product-item",
-    "[class*='product-card']",
-    ".item-product",
-    "[data-product-id]",
-  ];
-
-  let cards = [];
-  for (const sel of selectors) {
-    const found = document.querySelectorAll(sel);
-    if (found.length > 1) { cards = found; break; }
-  }
+  const cards = document.querySelectorAll(
+    "div.cus-col-1.category-single-product"
+  );
 
   return Array.from(cards).map((card) => {
-    const nameEl   = card.querySelector(
-      "h4.name a, h4 a, .product-name a, .name a, [class*='title'] a, h4, h3"
-    );
-    const name     = nameEl?.getAttribute("title") || nameEl?.textContent?.trim() || "";
+    // ── Link & image ──────────────────────────────────────────────────────
+    const imgBox     = card.querySelector("div.image-box");
+    const linkEl     = imgBox?.querySelector("a");
+    const imgEl      = imgBox?.querySelector("img.card-img-top");
+    const productUrl = linkEl?.href || "";
+    const imageUrl   = imgEl?.src   || "";
+
+    // ── Full name via title attribute (no truncation) ─────────────────────
+    const nameEl = card.querySelector("h4.product-title a");
+    const name   = nameEl?.getAttribute("title")
+                || nameEl?.textContent?.replace(/\.\.\.\s*$/, "").trim()
+                || "";
     if (!name) return null;
 
-    // Ryans shows prices inside .price / .price-new / strikethrough for old
-    const priceNewEl = card.querySelector(".price-new, .price-sale, .special-price");
-    const priceEl    = card.querySelector(".price:not(.old-price)");
-    const origEl     = card.querySelector(".price-old, .old-price, del, s, .regular-price");
-    const badgeEl    = card.querySelector(".sticker, .onsale, .badge, [class*='off']");
-    const imgEl      = card.querySelector("img");
-    const linkEl     = card.querySelector("a");
-    const ratingEl   = card.querySelector(".rating-stars, .stars, [class*='rating']");
-    const brandEl    = card.querySelector(".manufacturer, [class*='brand'], [class*='vendor']");
+    // ── SKU ───────────────────────────────────────────────────────────────
+    const sku = card.querySelector("span.found-text")?.textContent?.trim() || "";
 
-    const price     = cleanPrice((priceNewEl || priceEl)?.textContent);
-    const origPrice = cleanPrice(origEl?.textContent);
+    // ── Current price from card body ──────────────────────────────────────
+    const cardPrice = cleanPrice(
+      card.querySelector("p.pr-text.cat-sp-text")?.textContent
+    );
+
+    // ── Both prices from inline modal markup ──────────────────────────────
+    const modal      = card.querySelector("div.modal.product_view");
+    const spPrice    = cleanPrice(modal?.querySelector("span.new-sp-text")?.textContent);
+    const regPrice   = cleanPrice(modal?.querySelector("span.new-reg-text")?.textContent);
+
+    const currentPrice = spPrice || cardPrice;
+    const origPrice    = regPrice && regPrice > currentPrice ? regPrice : null;
+
+    // ── Discount note ─────────────────────────────────────────────────────
+    const discEl       = card.querySelector("span.fs-text");
+    const discountNote = discEl?.getAttribute("title")
+                      || discEl?.textContent?.trim()
+                      || null;
 
     return {
       name,
-      price,
-      originalPrice: origPrice && origPrice > price ? origPrice : null,
-      discount:
-        badgeEl?.textContent?.trim() ||
-        (origPrice && price && origPrice > price
-          ? `-${Math.round((1 - price / origPrice) * 100)}%`
-          : null),
-      brand:      brandEl?.textContent?.trim() || null,
-      rating:     ratingEl?.textContent?.trim() || null,
-      imageUrl:   imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
-      productUrl: linkEl?.href
-        ? linkEl.href.startsWith("http") ? linkEl.href : "https://www.ryans.com" + linkEl.href
-        : "",
+      price:         currentPrice,
+      originalPrice: origPrice,
+      discount:      discountNote,
+      sku,
+      imageUrl,
+      productUrl,
     };
   }).filter(Boolean);
 }
 
-function normalizeApiProduct(p) {
-  const cleanP = (v) => { const n = parseFloat(String(v || "").replace(/[^\d.]/g, "")); return isNaN(n) ? null : n; };
-  return {
-    name:          p.name || p.title || p.product_name || "",
-    price:         cleanP(p.special || p.price || p.sale_price),
-    originalPrice: cleanP(p.price   || p.regular_price),
-    discount:      p.discount || null,
-    brand:         p.manufacturer || p.brand || null,
-    rating:        p.rating || null,
-    imageUrl:      p.thumb || p.image || "",
-    productUrl:    p.href  || (p.product_id ? `${BASE_URL}/product/${p.product_id}` : ""),
-  };
+// ─── Get total result count ────────────────────────────────────────────────────
+
+function extractTotalCount() {
+  // <b>1482&nbsp;products found</b>
+  const bEl = document.querySelector(".category-pagination-section b");
+  if (bEl) {
+    const n = parseInt(bEl.textContent.replace(/[^\d]/g, ""));
+    if (!isNaN(n)) return n;
+  }
+  return null;
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Core scraper ─────────────────────────────────────────────────────────────
 
-/**
- * Scrape Ryans product listings from a category/listing URL.
- * @param {string} listingUrl   e.g. "https://www.ryans.com/laptops"
- * @param {number} pages
- */
-async function scrapeRyans(listingUrl = `${BASE_URL}/laptops`, pages = 1) {
+async function scrapeRyansUrl(url, pages = 1) {
   const page    = await newPage();
   const results = [];
 
   try {
     for (let p = 1; p <= pages; p++) {
-      const url = p === 1 ? listingUrl : `${listingUrl}?page=${p}`;
+      const sep     = url.includes("?") ? "&" : "?";
+      const pageUrl = p === 1 ? url : `${url}${sep}limit=30&page=${p}`;
 
-      // Use XHR interception on first page, then DOM for subsequent
-      if (p === 1) {
-        const intercepted = await interceptProducts(page, url);
-        if (intercepted.length > 0) {
-          results.push(...intercepted.map(normalizeApiProduct));
-          page.removeAllListeners("response");
+      await navigateTo(page, pageUrl);
+      await autoScroll(page);
+      await sleep(800);
 
-          // Fetch remaining pages via DOM (intercepted data may only cover p1)
-          for (let pp = 2; pp <= pages; pp++) {
-            await navigateTo(page, `${listingUrl}?page=${pp}`);
-            await autoScroll(page);
-            const dom = await page.evaluate(extractProducts);
-            if (dom.length === 0) break;
-            results.push(...dom);
-            if (pp < pages) await sleep(DELAY);
-          }
-          break; // outer loop done
-        } else {
-          page.removeAllListeners("response");
-          await autoScroll(page); // page already loaded by interceptProducts
-          const dom = await page.evaluate(extractProducts);
-          results.push(...dom);
+      const products = await page.evaluate(extractRyansProducts);
+      if (!products || products.length === 0) break;
+
+      results.push(...products);
+
+      // Auto-cap pages based on real total
+      if (p === 1 && pages > 1) {
+        const total = await page.evaluate(extractTotalCount);
+        if (total !== null) {
+          const maxPages = Math.ceil(total / 30);
+          if (pages > maxPages) pages = maxPages;
         }
-      } else {
-        await navigateTo(page, url);
-        await autoScroll(page);
-        const dom = await page.evaluate(extractProducts);
-        if (dom.length === 0) break;
-        results.push(...dom);
       }
 
       if (p < pages) await sleep(DELAY);
     }
   } finally {
-    page.removeAllListeners("response");
     await page.close();
   }
 
-  return results.map((p) => ({ ...p, source: SOURCE_NAME, category: "Electronics" }));
+  return results.map((item) => ({
+    ...item,
+    source:   SOURCE_NAME,
+    category: "Electronics",
+  }));
 }
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Search Ryans by keyword.
- * @param {string} keyword
- * @param {number} pages
+ * URL: https://www.ryans.com/search?search=<keyword>
+ * Pagination: &limit=30&page=N
  */
 async function searchRyans(keyword, pages = 1) {
-  const searchUrl = `${BASE_URL}/index.php?route=product/search&search=${encodeURIComponent(keyword)}`;
-  return scrapeRyans(searchUrl, pages);
+  const searchUrl = `${BASE_URL}/search?search=${encodeURIComponent(keyword)}`;
+  return scrapeRyansUrl(searchUrl, pages);
 }
 
 /**
- * Get Ryans top-level navigation categories.
+ * Browse a Ryans category page.
+ * @param {string} categorySlug  e.g. "desktop-component-mouse"
+ */
+async function scrapeRyans(categorySlug = "desktop-component-mouse", pages = 1) {
+  const url = categorySlug.startsWith("http")
+    ? categorySlug
+    : `${BASE_URL}/category/${categorySlug}`;
+  return scrapeRyansUrl(url, pages);
+}
+
+/**
+ * Get Ryans product categories from nav menu.
  */
 async function getRyansCategories() {
   const page = await newPage();
   try {
     await navigateTo(page, BASE_URL);
+    await sleep(1000);
     return page.evaluate(() => {
-      const links = document.querySelectorAll("#menu a, .nav-menu a, nav a, .main-menu a");
+      const links = document.querySelectorAll("#navbar_main a, nav.main-menu a");
       return Array.from(links)
         .map((a) => ({ name: a.textContent.trim(), url: a.href }))
-        .filter((c) => c.name.length > 1 && c.url.includes("ryans.com") && !c.url.includes("#"));
+        .filter(
+          (c) =>
+            c.name.length > 1 &&
+            c.url.includes("ryans.com/category") &&
+            !c.url.includes("#")
+        )
+        .reduce((acc, c) => {
+          if (!acc.find((x) => x.url === c.url)) acc.push(c);
+          return acc;
+        }, []);
     });
   } finally {
     await page.close();

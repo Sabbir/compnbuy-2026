@@ -1,39 +1,48 @@
 /**
  * index.js  (src/scrapers/clothing)
  * Unified entry point for all Clothing scrapers.
+ *
+ * Sources:
+ *   blucheez    → blucheez.fashion    (Shopify)
+ *   fabrilife   → fabrilife.com       (Laravel custom)
+ *   lerevecraze → lerevecraze.com     (WooCommerce)
+ *
+ * TwelveBD has been removed and replaced with Le Reve Craze.
  */
 
-const { scrapeBlucheez, getBlucheezCollections, searchBlucheez } = require("./blucheezScraper");
-const { scrapeFabrilife, getFabrilifeCategories, searchFabrilife } = require("./fabrilifeScraper");
-const { scrapeTwelve,   getTwelveCategories,    searchTwelve }   = require("./lereveScraper");
+const { scrapeBlucheez,  getBlucheezCollections, searchBlucheez }  = require("./blucheezScraper");
+const { scrapeFabrilife, getFabrilifeCategories, searchFabrilife }  = require("./fabrilifeScraper");
+const { scrapeLeReve,    getLeReveCategories,    searchLeReve }     = require("./lereveScraper");
 
 const SOURCE_DEFAULTS = {
-  blucheez:  "https://blucheez.fashion/collections/all",
-  fabrilife: "https://fabrilife.com/products",
-  lereve:  "https://www.lerevecraze.com/product-category",
+  blucheez:    "https://blucheez.fashion/collections/all",
+  fabrilife:   "https://fabrilife.com/products",
+  lerevecraze: "https://www.lerevecraze.com/product-category/panjabi/",
 };
 
 const SCRAPERS = {
-  blucheez:  scrapeBlucheez,
-  fabrilife: scrapeFabrilife,
-  twelvebd:  scrapeTwelve,
+  blucheez:    scrapeBlucheez,
+  fabrilife:   scrapeFabrilife,
+  lerevecraze: scrapeLeReve,
 };
 
 const SEARCH_FNS = {
-  blucheez:  searchBlucheez,
-  fabrilife: searchFabrilife,
-  twelvebd:  searchTwelve,
+  blucheez:    searchBlucheez,
+  fabrilife:   searchFabrilife,
+  lerevecraze: searchLeReve,
 };
 
 const CATEGORY_FETCHERS = {
-  blucheez:  getBlucheezCollections,
-  fabrilife: getFabrilifeCategories,
-  twelvebd:  getTwelveCategories,
+  blucheez:    getBlucheezCollections,
+  fabrilife:   getFabrilifeCategories,
+  lerevecraze: getLeReveCategories,
 };
 
 async function scrapeClothingSource(source, url, pages = 1) {
   const scraper = SCRAPERS[source];
-  if (!scraper) throw new Error(`Unknown clothing source "${source}". Valid: ${Object.keys(SCRAPERS).join(", ")}`);
+  if (!scraper) throw new Error(
+    `Unknown clothing source "${source}". Valid: ${Object.keys(SCRAPERS).join(", ")}`
+  );
   return scraper(url || SOURCE_DEFAULTS[source], pages);
 }
 
@@ -53,7 +62,9 @@ async function scrapeAllClothing(pages = 1) {
 
 async function searchClothingSource(keyword, source, pages = 1) {
   const fn = SEARCH_FNS[source];
-  if (!fn) throw new Error(`Unknown clothing source "${source}". Valid: ${Object.keys(SEARCH_FNS).join(", ")}`);
+  if (!fn) throw new Error(
+    `Unknown clothing source "${source}". Valid: ${Object.keys(SEARCH_FNS).join(", ")}`
+  );
   return fn(keyword, pages);
 }
 
@@ -73,7 +84,9 @@ async function searchAllClothing(keyword, pages = 1) {
 
 async function getClothingCategories(source) {
   const fetcher = CATEGORY_FETCHERS[source];
-  if (!fetcher) throw new Error(`No category fetcher for "${source}". Valid: ${Object.keys(CATEGORY_FETCHERS).join(", ")}`);
+  if (!fetcher) throw new Error(
+    `No category fetcher for "${source}". Valid: ${Object.keys(CATEGORY_FETCHERS).join(", ")}`
+  );
   return fetcher();
 }
 

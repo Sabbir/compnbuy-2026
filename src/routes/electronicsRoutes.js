@@ -28,7 +28,7 @@ const router = Router();
 const ALLOWED_DOMAINS = {
   startech: "startech.com.bd",
   ryans:    "ryans.com",
-  vertech:  "vertech.com.bd",
+  techlandbd: "techlandbd.com",
 };
 
 function isAllowedUrl(source, url) {
