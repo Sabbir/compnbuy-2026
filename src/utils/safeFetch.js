@@ -22,7 +22,10 @@ const SAFE_FETCH_SRC = /* js */ `
 async function safeFetch(url, opts) {
   try {
     const r = await fetch(url, {
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
       ...(opts || {})
     });
     if (!r.ok) return null;
