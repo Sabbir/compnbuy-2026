@@ -17,13 +17,16 @@ const USER_AGENT =
 function resolveChromePath() {
   const candidates = [
     process.env.PUPPETEER_EXECUTABLE_PATH,
-    "/opt/google/chrome/chrome",
+    // ── Puppeteer Docker image (ghcr.io/puppeteer/puppeteer) ──────────────
+    "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome",
+    // ── Standard Linux paths ──────────────────────────────────────────────
+    "/opt/google/chrome/chrome",
     "/usr/bin/chromium-browser",
     "/usr/bin/chromium",
   ].filter(Boolean);
 
-  // Search Puppeteer cache
+  // Search Puppeteer cache (~/.cache/puppeteer/chrome)
   const cacheRoot = path.join(
     process.env.HOME || "/root",
     ".cache", "puppeteer", "chrome"
@@ -35,7 +38,10 @@ function resolveChromePath() {
     });
   }
 
-  return candidates.find((p) => fs.existsSync(p)) || null;
+  const found = candidates.find((p) => fs.existsSync(p)) || null;
+  if (found) console.log(`[Browser] Chrome found at: ${found}`);
+  else        console.warn("[Browser] Chrome not found in any known path");
+  return found;
 }
 
 // ─── Singleton State ──────────────────────────────────────────────────────────
@@ -53,8 +59,12 @@ async function getBrowser() {
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
+      "--disable-gpu",
       "--disable-blink-features=AutomationControlled",
       "--window-size=1366,768",
+      // Required on Render free tier (512MB RAM) — runs Chrome in one process
+      "--single-process",
+      "--no-zygote",
     ],
     defaultViewport: { width: 1366, height: 768 },
   });

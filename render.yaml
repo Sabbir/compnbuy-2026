@@ -1,0 +1,14 @@
+# render.yaml — Render deployment config
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: comp-n-buy-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000

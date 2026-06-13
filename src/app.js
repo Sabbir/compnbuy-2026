@@ -58,7 +58,7 @@ app.use((req, res) => {
       "GET  /api/grocery/meenabazaar/categories",
       "GET  /api/clothing/sources",
       "GET  /api/clothing/all?pages=<n>",
-      "GET  /api/clothing/:source?url=<override>&pages=<n>  (source: blucheez|fabrilife|lereve)",
+      "GET  /api/clothing/:source?url=<override>&pages=<n>  (source: blucheez|fabrilife|twelvebd)",
       "GET  /api/clothing/:source/categories",
       "GET  /api/electronics/sources",
       "GET  /api/electronics/all?pages=<n>",

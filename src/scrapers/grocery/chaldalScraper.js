@@ -109,17 +109,13 @@ function extractFromDom() {
 
   // Chaldal's React DOM uses these class patterns for product cards
   const selectors = [
-    '[data-testid="product-card"]',
-    '.product-card',
-    '.product-item',
-    '[class*="product"]',
-    '.card',
-    '.item',
-    '[class*="Product"]',
-    '.product',
-    '.productContainer'
+    ".product",
+    "[class*='productItem']",
+    "[class*='ProductCard']",
+    "[class*='product-card']",
+    "[class*='item']",
   ];
-  
+
   let cards = [];
   for (const sel of selectors) {
     const found = document.querySelectorAll(sel);
@@ -157,7 +153,7 @@ function extractFromDom() {
       imageUrl:      imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
       productUrl:    linkEl?.href
         ? (linkEl.href.startsWith("http") ? linkEl.href : "https://chaldal.com" + linkEl.href)
-        : document.URL,
+        : "",
     };
   }).filter(Boolean);
 }
@@ -200,7 +196,6 @@ function normalizeApiProduct(p) {
  * @param {number} pages
  */
 async function scrapeChaldal(categoryUrl = BASE_URL, pages = 1) {
-  console.log(BASE_URL)
   const page    = await newPage();
   const results = [];
 
@@ -259,22 +254,19 @@ async function searchChaldal(keyword, pages = 1) {
   try {
     await injectSafeFetch(page);
 
-    
-
     for (let p = 1; p <= pages; p++) {
       // Page 1: /search/eggs
       // Page 2+: Chaldal doesn't appear to paginate search, but we include the param just in case
       const url = p === 1
         ? `${BASE_URL}/search/${encodeURIComponent(slug)}`
         : `${BASE_URL}/search/${encodeURIComponent(slug)}?page=${p}`;
-      console.log(url)
+
       const captured = await interceptProducts(page, url);
-      
+
       if (captured.length > 0) {
         results.push(...captured.map(normalizeApiProduct));
       } else {
         const dom = await page.evaluate(extractFromDom);
-        console.log(dom)
         if (dom.length === 0) break;
         results.push(...dom);
       }
@@ -284,7 +276,7 @@ async function searchChaldal(keyword, pages = 1) {
   } finally {
     await page.close();
   }
-  
+
   return results
     .filter((p) => p.name)
     .map((p) => ({ ...p, source: SOURCE_NAME, category: "Grocery", query: keyword.trim() }));

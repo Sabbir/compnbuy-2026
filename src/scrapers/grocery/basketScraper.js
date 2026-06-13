@@ -277,11 +277,10 @@ async function searchBasket(keyword, pages = 1) {
 
     // Navigate to Magento search URL (correct URL for TheBasketBD)
     const searchUrl = `${BASE_URL}/catalogsearch/result/?q=${encodeURIComponent(keyword.trim())}`;
-    
     await navigateTo(page, searchUrl);
     await autoScroll(page);
     await sleep(1000); // let Magento JS hydrate search results
-    
+
     // ── Strategy 1: Magento 2 REST search API ──────────────────────────────
     const apiResults = await tryMagentoRestSearch(page, keyword.trim(), 1);
     if (apiResults && apiResults.length > 0) {
@@ -313,15 +312,11 @@ async function searchBasket(keyword, pages = 1) {
         }
       }
     }
-  } catch (error) {
-    console.log('An error occurred:', error.message);
-  }
-  finally {
+  } finally {
     await page.close();
   }
 
   // Deduplicate by name (in case API and DOM overlap)
-  
   const seen = new Set();
   return results
     .filter((p) => {

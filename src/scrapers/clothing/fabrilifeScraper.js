@@ -63,7 +63,7 @@ async function tryApiEndpoints(page) {
   for (const url of candidates) {
     try {
       const data = await page.evaluate(async (apiUrl) => {
-        const r = await fetch(apiUrl, { headers: { Accept: "application/json" } });
+        const r = await fetch(apiUrl, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
         if (!r.ok) return null;
         const ct = r.headers.get("content-type") || "";
         if (!ct.includes("json")) return null;
@@ -115,10 +115,15 @@ function extractFromDom() {
   };
 
   const selectors = [
-    '.product-card',
-    '.product-name',
-    '[Class: "product-card"]',
-    '.product-price-row'
+    "[class*='product-card']",
+    "[class*='ProductCard']",
+    "[class*='product-item']",
+    ".product",
+    "[class*='item-card']",
+    ".card.product",
+    "[data-product-id]",
+    "[data-id]",
+    ".col-product",
   ];
 
   let cards = [];
@@ -132,12 +137,12 @@ function extractFromDom() {
       "[class*='name'], [class*='title'], h2, h3, h4, [class*='product-name']"
     );
     const priceEl = card.querySelector(
-      '.card-text, [class*="price-current"]'
+      "[class*='price']:not([class*='old']):not([class*='regular']):not([class*='was'])"
     );
     const origEl  = card.querySelector(
-      "[class*='price-original'], [class*='was'], del, s, strike"
+      "[class*='old'], [class*='regular'], [class*='was'], del, s, strike"
     );
-    const discEl  = card.querySelector("[class*='price-off'], [class*='badge']");
+    const discEl  = card.querySelector("[class*='discount'], [class*='off'], [class*='badge']");
     const imgEl   = card.querySelector("img");
     const linkEl  = card.querySelector("a");
     const unitEl  = card.querySelector("[class*='size'], [class*='unit']");
@@ -243,7 +248,7 @@ async function searchFabrilife(keyword, pages = 1) {
   const results = [];
 
   try {
-    const searchUrl = `${BASE_URL}/shop?query=${encodeURIComponent(keyword)}`;
+    const searchUrl = `${BASE_URL}/search?q=${encodeURIComponent(keyword)}`;
     await navigateTo(page, searchUrl);
 
     // Try API search endpoint
@@ -257,7 +262,7 @@ async function searchFabrilife(keyword, pages = 1) {
     for (const endpoint of apiCandidates) {
       const data = await page.evaluate(async (url) => {
         try {
-          const r = await fetch(url, { headers: { Accept: "application/json" } });
+          const r = await fetch(url, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
           if (!r.ok) return null;
           const ct = r.headers.get("content-type") || "";
           if (!ct.includes("json")) return null;
@@ -287,7 +292,6 @@ async function searchFabrilife(keyword, pages = 1) {
         await autoScroll(page);
         const dom = await page.evaluate(extractFromDom);
         if (dom.length === 0) break;
-
         results.push(...dom);
         if (p < pages) await sleep(DELAY);
       }

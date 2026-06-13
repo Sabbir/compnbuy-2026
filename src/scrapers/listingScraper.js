@@ -16,9 +16,6 @@ function extractCards() {
     '[data-qa-locator="product-item"], .c2prKC, ._17mcb, .gridItem--Yz3Ii'
   );
 
-  console.log(cards[0])
-  
-  
   const cleanPrice = (raw) => {
     const n = parseFloat((raw || "").replace(/[^\d.]/g, ""));
     return isNaN(n) ? null : n;

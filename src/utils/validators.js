@@ -36,7 +36,7 @@ function parsePages(raw, max = 10) {
 const CLOTHING_DOMAINS = [
   "blucheez.fashion",
   "fabrilife.com",
-  "lerevecraze.com",
+  "twelvebd.com",
 ];
 
 function isValidClothingUrl(url) {
