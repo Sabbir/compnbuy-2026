@@ -10,7 +10,7 @@ const SEARCH_TERM = 'milk'; // Change this to any product you want to search for
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function scrapeChaldalSearch(searchTerm) {
-    const url = `https://chaldal.com/search?q=${encodeURIComponent(searchTerm)}`;
+    const url = `https://chaldal.com/search/${encodeURIComponent(searchTerm)}`;
     console.log(`Scraping: ${url}`);
 
     try {

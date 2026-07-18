@@ -1,307 +1,283 @@
 /**
  * fabrilifeScraper.js
- * Scrapes product data from fabrilife.com
  *
- * Platform: Custom Laravel / PHP e-commerce (Bangladeshi fashion brand)
- * Strategy:
- *  1. Try /api/products or /products.json endpoint (some Laravel shops expose these)
- *  2. Intercept XHR responses for product data
- *  3. Fallback: parse rendered HTML product grid
+ * CONFIRMED FROM SOURCE (fabrilife.com/shop?query=Jeans, July 2026):
  *
- * Known URL patterns:
- *   /products           → all products listing
- *   /products?page=N    → paginated listing
- *   /category/<slug>    → category listing
+ * Fabrilife uses Algolia InstantSearch for their shop/search page.
+ * We call the Algolia Search API directly — no Puppeteer needed.
+ *
+ * ALGOLIA CONFIG (extracted from their page JS):
+ *   App ID:    2UIXGXYA5O
+ *   API Key:   bfcfa7b10e2c9220df5d1d639d485218  (public search-only key)
+ *   Index:     products
+ *   Endpoint:  POST https://2UIXGXYA5O-dsn.algolia.net/1/indexes/products/query
+ *
+ * SEARCH URL (for productUrl):
+ *   https://fabrilife.com/product/<id>-<slug>
+ *   Image:  https://fabrilife.com/products/<hash>-square.jpg
+ *
+ * FALLBACK:
+ *   If Algolia is unreachable, falls back to Puppeteer scraping /shop?query=<kw>
+ *   and reads the mega-menu product cards which ARE server-rendered in the HTML.
  */
 
-const { newPage } = require("../../browser/browserManager");
-const { navigateTo, autoScroll, sleep } = require("../../browser/pageHelpers");
+const { newPage }           = require("../../browser/browserManager");
+const { navigateTo, sleep } = require("../../browser/pageHelpers");
 
-const BASE_URL    = "https://fabrilife.com";
-const DELAY       = parseInt(process.env.PAGE_DELAY) || 2000;
-const SOURCE_NAME = "fabrilife";
+const BASE_URL       = "https://fabrilife.com";
+const ALGOLIA_APP_ID = "2UIXGXYA5O";
+const ALGOLIA_KEY    = "bfcfa7b10e2c9220df5d1d639d485218";
+const ALGOLIA_INDEX  = "products";
+const ALGOLIA_URL    = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`;
+const SOURCE_NAME    = "fabrilife";
+const HITS_PER_PAGE  = 40;
+const API_TIMEOUT    = 12000;
 
-// ─── XHR Interception ────────────────────────────────────────────────────────
-
-async function interceptAndLoad(page, url) {
-  const captured = [];
-
-  page.on("response", async (res) => {
-    const resUrl = res.url();
-    const ct     = res.headers()["content-type"] || "";
-    if (
-      ct.includes("json") &&
-      (resUrl.includes("product") || resUrl.includes("catalog") || resUrl.includes("item"))
-    ) {
-      try {
-        const _t = await res.text().catch(() => ""); const _f = _t.trimStart()[0]; if (_f !== "{" && _f !== "[") return; let json; try { json = JSON.parse(_t); } catch { return; }
-        const items =
-          json.data?.data || json.data || json.products ||
-          json.items      || json.results ||
-          (Array.isArray(json) ? json : []);
-        if (items.length) captured.push(...items);
-      } catch { /* skip */ }
-    }
-  });
-
-  await navigateTo(page, url);
-  await autoScroll(page);
-  await sleep(1500);
-  return captured;
-}
-
-// ─── API probe ────────────────────────────────────────────────────────────────
-
-async function tryApiEndpoints(page) {
-  const candidates = [
-    `${BASE_URL}/api/products?per_page=50&page=1`,
-    `${BASE_URL}/products.json?limit=50`,
-    `${BASE_URL}/api/v1/products`,
-    `${BASE_URL}/api/catalog/products`,
-  ];
-
-  for (const url of candidates) {
-    try {
-      const data = await page.evaluate(async (apiUrl) => {
-        const r = await fetch(apiUrl, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
-        if (!r.ok) return null;
-        const ct = r.headers.get("content-type") || "";
-        if (!ct.includes("json")) return null;
-      const text = await r.text();
-      const first = text.trimStart()[0];
-      if (first !== "{" && first !== "[") return null;
-      try { return JSON.parse(text); } catch { return null; }
-      }, url);
-
-      if (!data) continue;
-      const items =
-        data.data?.data || data.data || data.products ||
-        data.items      || (Array.isArray(data) ? data : null);
-      if (Array.isArray(items) && items.length > 0) return items;
-    } catch { /* skip */ }
-  }
-  return null;
-}
-
-// ─── Normalizers ─────────────────────────────────────────────────────────────
-
-function normalizeApiProduct(p) {
-  const cleanPrice = (v) => {
-    const n = parseFloat(v);
+// ─── Normalizer ───────────────────────────────────────────────────────────────
+function normalizeHit(hit) {
+  const clean = (v) => {
+    const n = parseFloat(String(v || "").replace(/[^\d.]/g, ""));
     return isNaN(n) ? null : n;
   };
+
+  // Algolia hit image field — Fabrilife image is a relative path like:
+  //   "/products/651830ea2d2c2-square.png"
+  // We try every possible field name, then build the full URL.
+  const imgRaw =
+    hit.image        ||
+    hit.thumbnail    ||
+    hit.photo        ||
+    hit.picture      ||
+    hit.cover        ||
+    hit.imageUrl     ||
+    hit.image_url    ||
+    hit.img          ||
+    hit.src          ||
+    "";
+
+  let imageUrl = typeof imgRaw === "string"
+    ? imgRaw
+    : (imgRaw?.url || imgRaw?.src || imgRaw?.path || "");
+
+  // Resolve to full URL — Algolia returns image in one of these shapes:
+  //   "660ab04660919-square.jpg"          ← just filename (most common)
+  //   "/products/660ab04660919-square.jpg" ← relative with /products/
+  //   "https://fabrilife.com/products/..." ← already full
+  if (imageUrl && !imageUrl.startsWith("http")) {
+    if (imageUrl.startsWith("/products/") || imageUrl.startsWith("products/")) {
+      // Already has /products/ path — just prepend domain
+      imageUrl = BASE_URL + (imageUrl.startsWith("/") ? "" : "/") + imageUrl;
+    } else {
+      // Just a filename — add /products/ in the middle
+      imageUrl = `${BASE_URL}/products/${imageUrl}`;
+    }
+  }
+
+  // Product URL: Fabrilife format is /product/<id>-<slug>
+  // e.g. https://fabrilife.com/product/73494-kids-premium-t-shirt-elephant
+  const slug = hit.slug || hit.handle || "";
+  const id   = hit.objectID || hit.id || "";
+  let productUrl = "";
+  if (id && slug) {
+    // Guard: if slug already starts with the id, don't double-prefix
+    productUrl = slug.startsWith(`${id}-`)
+      ? `${BASE_URL}/product/${slug}`
+      : `${BASE_URL}/product/${id}-${slug}`;
+  } else if (slug) {
+    // slug might already include the id prefix (e.g. "73494-kids-premium-...")
+    productUrl = `${BASE_URL}/product/${slug}`;
+  } else if (id) {
+    productUrl = `${BASE_URL}/product/${id}`;
+  }
+
+  const price     = clean(hit.price         || hit.sale_price);
+  const origPrice = clean(hit.compare_price || hit.regular_price || hit.mrp || hit.original_price);
+
+  let discount = null;
+  if (origPrice && price && origPrice > price) {
+    const pct = Math.round((1 - price / origPrice) * 100);
+    if (pct > 0) discount = `-${pct}%`;
+  }
 
   return {
-    name:          p.name          || p.title       || p.product_name || "",
-    price:         cleanPrice(p.price          || p.sale_price    || p.current_price),
-    originalPrice: cleanPrice(p.regular_price  || p.mrp           || p.original_price),
-    discount:      p.discount      || p.discount_text || null,
-    sku:           p.sku           || p.code         || null,
-    imageUrl:      p.image         || p.thumbnail    || p.image_url   || p.featured_image || "",
-    productUrl:    p.url           || (p.slug ? `${BASE_URL}/products/${p.slug}` : ""),
-    inStock:       p.in_stock      ?? p.available    ?? true,
-    sizes:         Array.isArray(p.sizes)  ? p.sizes  : null,
-    colors:        Array.isArray(p.colors) ? p.colors : null,
-    productType:   p.category      || p.type         || null,
+    name:          (hit.title || hit.name || "").replace(/Fabrilife/gi, "").trim(),
+    price,
+    originalPrice: origPrice && origPrice !== price ? origPrice : null,
+    discount,
+    unit:          null,
+    imageUrl,
+    productUrl,
+    inStock:       hit.status === 1 || hit.in_stock !== false,
+    source:        SOURCE_NAME,
+    category:      "Clothing",
   };
 }
 
-// ─── DOM Extractor ────────────────────────────────────────────────────────────
+// ─── Strategy 1: Algolia API (no browser) ─────────────────────────────────────
+async function fetchViaAlgolia(keyword, page = 0) {
+  const { default: fetch } = await import("node-fetch");
 
-function extractFromDom() {
-  const cleanPrice = (raw) => {
-    const n = parseFloat((raw || "").replace(/[^\d.]/g, ""));
-    return isNaN(n) ? null : n;
-  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT);
 
-  const selectors = [
-    "[class*='product-card']",
-    "[class*='ProductCard']",
-    "[class*='product-item']",
-    ".product",
-    "[class*='item-card']",
-    ".card.product",
-    "[data-product-id]",
-    "[data-id]",
-    ".col-product",
-  ];
+  try {
+    const res = await fetch(ALGOLIA_URL, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "X-Algolia-Application-Id": ALGOLIA_APP_ID,
+        "X-Algolia-API-Key":        ALGOLIA_KEY,
+        "Content-Type":             "application/json",
+      },
+      body: JSON.stringify({
+        query:       keyword,
+        hitsPerPage: HITS_PER_PAGE,
+        page,
+      }),
+    });
 
-  let cards = [];
-  for (const sel of selectors) {
-    const found = document.querySelectorAll(sel);
-    if (found.length > 2) { cards = found; break; }
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      console.warn(`[fabrilife] Algolia API ${res.status} for "${keyword}"`);
+      return null;
+    }
+
+    const json = await res.json().catch(() => null);
+    if (!json?.hits) {
+      console.warn(`[fabrilife] Unexpected Algolia response for "${keyword}"`);
+      return null;
+    }
+
+    console.log(`[fabrilife] Algolia: ${json.nbHits} total hits for "${keyword}", got ${json.hits.length}`);
+
+    // Always log first hit's image-related fields on first call to confirm field name
+    if (json.hits.length > 0) {
+      const h = json.hits[0];
+      const imgFields = Object.entries(h)
+        .filter(([k, v]) => typeof v === "string" && (
+          v.includes("/products/") || v.includes("square") ||
+          v.includes(".jpg") || v.includes(".png") || v.includes(".webp")
+        ))
+        .map(([k, v]) => `${k}="${v.substring(0, 80)}"`);
+      console.log(`[fabrilife] Image fields on first hit: ${imgFields.join(" | ") || "NONE — keys: " + Object.keys(h).join(", ")}`);
+    }
+
+    return json.hits;
+  } catch (err) {
+    clearTimeout(timer);
+    console.warn(`[fabrilife] Algolia error for "${keyword}":`,
+      err.name === "AbortError" ? "timeout" : err.message);
+    return null;
   }
+}
 
-  return Array.from(cards).map((card) => {
-    const nameEl  = card.querySelector(
-      "[class*='name'], [class*='title'], h2, h3, h4, [class*='product-name']"
-    );
-    const priceEl = card.querySelector(
-      "[class*='price']:not([class*='old']):not([class*='regular']):not([class*='was'])"
-    );
-    const origEl  = card.querySelector(
-      "[class*='old'], [class*='regular'], [class*='was'], del, s, strike"
-    );
-    const discEl  = card.querySelector("[class*='discount'], [class*='off'], [class*='badge']");
-    const imgEl   = card.querySelector("img");
-    const linkEl  = card.querySelector("a");
-    const unitEl  = card.querySelector("[class*='size'], [class*='unit']");
+// ─── Strategy 2: Puppeteer fallback ──────────────────────────────────────────
+// Fabrilife server-renders the mega-menu product cards (New Arrivals) in the HTML.
+// For the search fallback we scrape those — they have name + image, but no price.
+async function fetchViaBrowser(keyword) {
+  const page = await newPage();
+  try {
+    const url = `${BASE_URL}/shop?query=${encodeURIComponent(keyword)}`;
+    await navigateTo(page, url);
+    await sleep(3000); // wait for Algolia's InstantSearch to render hits
 
-    const name = nameEl?.textContent?.trim() || "";
-    if (!name) return null;
+    return page.evaluate((baseUrl) => {
+      // Try Algolia InstantSearch rendered hits first
+      const hitSelectors = [
+        ".ais-Hits-item",
+        ".ais-InfiniteHits-item",
+        "[class*='hit']",
+        ".product-card",
+        ".shop-item",
+      ];
 
-    return {
-      name,
-      price:         cleanPrice(priceEl?.textContent),
-      originalPrice: cleanPrice(origEl?.textContent),
-      discount:      discEl?.textContent?.trim()  || null,
-      imageUrl:      imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
-      productUrl:    linkEl?.href || "",
-      unit:          unitEl?.textContent?.trim()  || null,
-    };
-  }).filter(Boolean);
+      let cards = [];
+      for (const sel of hitSelectors) {
+        cards = Array.from(document.querySelectorAll(sel));
+        if (cards.length > 1) break;
+      }
+
+      // Fallback: mega-menu product cards (always server-rendered)
+      if (cards.length === 0) {
+        cards = Array.from(document.querySelectorAll(".mega-menu-product-card"));
+      }
+
+      return cards.map((card) => {
+        const linkEl  = card.querySelector("a[href]") || (card.tagName === "A" ? card : null);
+        const imgEl   = card.querySelector("img");
+        const nameEl  = card.querySelector("[class*='title'], [class*='name'], h2, h3, h4");
+        const priceEl = card.querySelector("[class*='price']");
+
+        const href = linkEl?.getAttribute("href") || card.getAttribute("href") || "";
+        let imgSrc = imgEl?.getAttribute("src") || imgEl?.getAttribute("data-src") || "";
+        if (imgSrc && !imgSrc.startsWith("http")) {
+          imgSrc = baseUrl + (imgSrc.startsWith("/") ? "" : "/") + imgSrc;
+        }
+
+        return {
+          name:       nameEl?.textContent?.trim() || card.getAttribute("alt") || "",
+          price:      parseFloat((priceEl?.textContent || "").replace(/[^\d.]/g, "")) || null,
+          imageUrl:   imgSrc,
+          productUrl: href.startsWith("http") ? href : baseUrl + href,
+        };
+      }).filter(p => p.name);
+    }, BASE_URL);
+  } finally {
+    await page.close().catch(() => {});
+  }
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
+async function searchFabrilife(keyword, _pages = 1) {
+  if (!keyword?.trim()) throw new Error("keyword is required");
 
-/**
- * Scrape Fabrilife products.
- * @param {string} listingUrl  e.g. "https://fabrilife.com/products"
- * @param {number} pages
- */
-async function scrapeFabrilife(listingUrl = `${BASE_URL}/products`, pages = 1) {
-  const page    = await newPage();
-  const results = [];
+  const q = keyword.trim();
+  console.log(`[fabrilife] Searching: "${q}"`);
 
-  try {
-    // Navigate first to set session cookies
-    await navigateTo(page, listingUrl);
+  // Try Algolia first — fast, no browser
+  let hits = await fetchViaAlgolia(q);
 
-    // 1. Try REST API endpoints
-    const apiData = await tryApiEndpoints(page);
-    if (apiData && apiData.length > 0) {
-      results.push(...apiData.map(normalizeApiProduct));
-    } else {
-      // 2. XHR interception + DOM per page
-      for (let p = 1; p <= pages; p++) {
-        const url = p === 1
-          ? listingUrl
-          : `${listingUrl}?page=${p}`;
-
-        let intercepted = [];
-        if (p > 1) {
-          intercepted = await interceptAndLoad(page, url);
-        } else {
-          intercepted = []; // already navigated, just scrape DOM
-        }
-
-        if (intercepted.length > 0) {
-          results.push(...intercepted.map(normalizeApiProduct));
-        } else {
-          if (p > 1) await navigateTo(page, url);
-          await autoScroll(page);
-          const dom = await page.evaluate(extractFromDom);
-          if (dom.length === 0) break;
-          results.push(...dom);
-        }
-
-        if (p < pages) await sleep(DELAY);
-      }
+  if (!hits) {
+    console.log(`[fabrilife] Falling back to browser for "${q}"`);
+    try {
+      hits = await fetchViaBrowser(q);
+    } catch (err) {
+      console.error(`[fabrilife] Browser fallback failed:`, err.message);
     }
-  } finally {
-    page.removeAllListeners("response");
-    await page.close();
   }
 
-  return results.map((p) => ({ ...p, source: SOURCE_NAME, category: "Clothing" }));
+  if (!hits?.length) {
+    console.warn(`[fabrilife] No products found for "${q}"`);
+    return [];
+  }
+
+  const results = hits
+    .map(normalizeHit)
+    .filter((p) => p.name && p.price !== null);
+
+  console.log(`[fabrilife] ${results.length} products normalised for "${q}"`);
+  return results;
 }
 
-/**
- * Get Fabrilife categories from nav/menu.
- */
+async function scrapeFabrilife(listingUrl = `${BASE_URL}/shop`, _pages = 1) {
+  // For category browse, extract keyword from URL and search
+  const params = new URLSearchParams(listingUrl.split("?")[1] || "");
+  const keyword = params.get("query") || listingUrl.split("/").pop().replace(/-/g, " ") || "clothing";
+  return searchFabrilife(keyword);
+}
+
 async function getFabrilifeCategories() {
-  const page = await newPage();
-  try {
-    await navigateTo(page, BASE_URL);
-    return page.evaluate(() => {
-      const links = document.querySelectorAll(
-        "nav a, .navbar a, [class*='category'] a, [class*='menu'] a"
-      );
-      return Array.from(links)
-        .map((a) => ({ name: a.textContent.trim(), url: a.href }))
-        .filter((c) => c.name && c.url.includes("fabrilife.com") && c.name.length > 1);
-    });
-  } finally {
-    await page.close();
-  }
-}
-
-
-/**
- * Search Fabrilife products by keyword.
- * Tries known API endpoints first, then falls back to the search URL.
- * @param {string} keyword
- * @param {number} pages
- */
-async function searchFabrilife(keyword, pages = 1) {
-  const page    = await newPage();
-  const results = [];
-
-  try {
-    const searchUrl = `${BASE_URL}/search?q=${encodeURIComponent(keyword)}`;
-    await navigateTo(page, searchUrl);
-
-    // Try API search endpoint
-    const apiCandidates = [
-      `${BASE_URL}/api/products?search=${encodeURIComponent(keyword)}&per_page=30`,
-      `${BASE_URL}/api/v1/products?q=${encodeURIComponent(keyword)}`,
-      `${BASE_URL}/products?q=${encodeURIComponent(keyword)}&format=json`,
-    ];
-
-    let apiHit = false;
-    for (const endpoint of apiCandidates) {
-      const data = await page.evaluate(async (url) => {
-        try {
-          const r = await fetch(url, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
-          if (!r.ok) return null;
-          const ct = r.headers.get("content-type") || "";
-          if (!ct.includes("json")) return null;
-          const text = await r.text();
-          const first = text.trimStart()[0];
-          if (first !== "{" && first !== "[") return null;
-          return JSON.parse(text);
-        } catch { return null; }
-      }, endpoint);
-
-      if (data) {
-        const items = data.data?.data || data.data || data.products ||
-                      data.items || (Array.isArray(data) ? data : null);
-        if (Array.isArray(items) && items.length > 0) {
-          results.push(...items.map(normalizeApiProduct));
-          apiHit = true;
-          break;
-        }
-      }
-    }
-
-    // DOM fallback
-    if (!apiHit) {
-      for (let p = 1; p <= pages; p++) {
-        const url = p === 1 ? searchUrl : `${searchUrl}&page=${p}`;
-        if (p > 1) await navigateTo(page, url);
-        await autoScroll(page);
-        const dom = await page.evaluate(extractFromDom);
-        if (dom.length === 0) break;
-        results.push(...dom);
-        if (p < pages) await sleep(DELAY);
-      }
-    }
-  } finally {
-    page.removeAllListeners("response");
-    await page.close();
-  }
-
-  return results.map((p) => ({ ...p, source: SOURCE_NAME, category: "Clothing" }));
+  return [
+    { name: "Men",      url: `${BASE_URL}/shop?query=men` },
+    { name: "Women",    url: `${BASE_URL}/shop?query=women` },
+    { name: "Kids",     url: `${BASE_URL}/shop?query=kids` },
+    { name: "Panjabi",  url: `${BASE_URL}/shop?query=panjabi` },
+    { name: "T-Shirt",  url: `${BASE_URL}/shop?query=t-shirt` },
+    { name: "Polo",     url: `${BASE_URL}/shop?query=polo` },
+    { name: "Jeans",    url: `${BASE_URL}/shop?query=jeans` },
+    { name: "Salwar",   url: `${BASE_URL}/shop?query=salwar` },
+  ];
 }
 
 module.exports = { scrapeFabrilife, getFabrilifeCategories, searchFabrilife };

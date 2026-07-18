@@ -12,6 +12,7 @@ const helmet  = require("helmet");
 const requestLogger = require("./middleware/requestLogger");
 const { errorHandler } = require("./middleware/errorHandler");
 const rateLimiter   = require("./middleware/rateLimiter");
+const { corsOptions, originGuard } = require("./middleware/originGuard");
 
 const healthRoutes   = require("./routes/healthRoutes");
 const searchRoutes   = require("./routes/searchRoutes");
@@ -25,7 +26,8 @@ const app = express();
 
 // ─── Security & parsing ───────────────────────────────────────────────────────
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));   // restrict to frontend origin only
+app.use(originGuard);         // block requests missing the shared API secret
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(requestLogger);

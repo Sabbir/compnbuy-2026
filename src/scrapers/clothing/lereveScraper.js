@@ -56,7 +56,7 @@ async function fetchWooProducts(page, params = {}) {
   const url  = `${BASE_URL}/wp-json/wc/store/v1/products?${qs}`;
   const data = await page.evaluate(async (endpoint) => {
     try {
-      const r    = await fetch(endpoint, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
+      const r    = await fetch(endpoint, { headers: { Accept: "application/json" } });
       const text = await r.text();
       const first = text.trimStart()[0];
       if (first !== "[" && first !== "{") return null;
@@ -76,14 +76,14 @@ function extractWooProducts() {
   };
 
   // WooCommerce standard product list selectors
-  let cards = document.querySelectorAll("li.product");
+  let cards = document.querySelectorAll(".lrv-product-grid");
   if (!cards.length) cards = document.querySelectorAll(".products li");
   if (!cards.length) cards = document.querySelectorAll("article.product");
   if (!cards.length) cards = document.querySelectorAll("[class*='product-item']");
 
   return Array.from(cards).map((card) => {
     const nameEl   = card.querySelector(
-      ".woocommerce-loop-product__title, .product-title, h2, h3"
+      ".text-truncate a"
     );
     const linkEl   = card.querySelector("a.woocommerce-loop-product__link, a");
     const priceEl  = card.querySelector("ins .woocommerce-Price-amount, .price ins, .price > .amount");
@@ -170,10 +170,11 @@ async function searchLeReve(keyword, pages = 1) {
     await injectSafeFetch(page);
 
     // Navigate to WP product search URL
-    const searchUrl = `${BASE_URL}/?s=${encodeURIComponent(keyword.trim())}&post_type=product`;
+    const searchUrl = `${BASE_URL}/product-category/${encodeURIComponent(keyword.trim())}/`;
     await navigateTo(page, searchUrl);
     await autoScroll(page);
     await sleep(800);
+    console.log(searchUrl)
 
     // Strategy 1 — WooCommerce Store API with search param
     const apiData = await fetchWooProducts(page, { search: keyword.trim(), page: 1 });

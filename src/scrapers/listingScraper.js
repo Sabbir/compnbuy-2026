@@ -1,13 +1,14 @@
 /**
  * listingScraper.js
  * Scrapes product cards from Daraz search results and category pages.
+ * No retries — if a page times out, it's skipped and results so far are returned.
  */
 
 const { newPage } = require("../browser/browserManager");
 const { navigateTo, autoScroll, sleep } = require("../browser/pageHelpers");
 
 const BASE_URL = "https://www.daraz.com.bd";
-const DELAY = parseInt(process.env.PAGE_DELAY) || 2000;
+const DELAY    = parseInt(process.env.PAGE_DELAY) || 1000; // reduced from 2000
 
 // ─── DOM Extractor (runs inside Chromium) ─────────────────────────────────────
 
@@ -35,8 +36,21 @@ function extractCards() {
       const discount  = card.querySelector('[class*="discount"], .WNoq3, [class*="Discount"]')?.textContent?.trim() || null;
       const rating    = card.querySelector('[class*="rating"] span, [class*="Rating"] span')?.textContent?.trim() || null;
       const reviewRaw = card.querySelector('[class*="review"], [class*="Review"]')?.textContent?.trim() || "";
-      const img       = card.querySelector("img");
-      const imageUrl  = img?.getAttribute("src") || img?.getAttribute("data-src") || "";
+      const img = card.querySelector("img");
+      // Daraz uses various lazy-load attributes depending on their React version.
+      // Always prefer lazy attrs over src (src holds a base64 placeholder until
+      // the image is actually in viewport). autoScroll force-copies these to src,
+      // but we read the attrs directly as a belt-and-suspenders approach.
+      const rawSrc = img?.getAttribute("src") || "";
+      const imageUrl =
+        img?.getAttribute("data-src")       ||
+        img?.getAttribute("data-lazy")      ||
+        img?.getAttribute("data-original")  ||
+        img?.getAttribute("data-lazy-src")  ||
+        img?.getAttribute("data-lazyload")  ||
+        img?.getAttribute("data-echo")      ||
+        img?.getAttribute("data-load-src")  ||
+        (rawSrc.startsWith("data:") ? "" : rawSrc);
       const href      = card.querySelector("a")?.getAttribute("href") || "";
       const reviewMatch = reviewRaw.match(/\d+/);
 
@@ -47,7 +61,8 @@ function extractCards() {
         discount,
         rating,
         reviewCount:   reviewMatch ? parseInt(reviewMatch[0]) : null,
-        imageUrl:      imageUrl.startsWith("//") ? "https:" + imageUrl : imageUrl,
+        imageUrl:      (imageUrl || "").startsWith("//") ? "https:" + imageUrl : (imageUrl || ""),
+        // BASE_URL cannot be referenced here — this fn runs inside the browser
         productUrl:    href.startsWith("http") ? href : "https://www.daraz.com.bd" + href,
       };
     })
@@ -56,53 +71,53 @@ function extractCards() {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/**
- * Scrape search results by keyword.
- * @param {string} keyword
- * @param {number} pages
- * @returns {Promise<object[]>}
- */
 async function scrapeSearch(keyword, pages = 1) {
-  const page = await newPage();
+  const page    = await newPage();
   const results = [];
 
   try {
     for (let p = 1; p <= pages; p++) {
       const url = `${BASE_URL}/catalog/?q=${encodeURIComponent(keyword)}&page=${p}`;
-      await navigateTo(page, url);
-      await autoScroll(page);
-      const products = await page.evaluate(extractCards);
-      results.push(...products);
+      try {
+        console.log(url)
+        await navigateTo(page, url);
+        await autoScroll(page);
+        const products = await page.evaluate(extractCards);
+        results.push(...products);
+      } catch (err) {
+        // One failed page → log it, stop paging, return what we have
+        console.warn(`[daraz] scrapeSearch p${p} skipped (${err.code || "ERR"}): ${err.message}`);
+        break;
+      }
       if (p < pages) await sleep(DELAY);
     }
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
   }
-
+  console.log(results)
   return results;
 }
 
-/**
- * Scrape a category listing page.
- * @param {string} categoryUrl
- * @param {number} pages
- * @returns {Promise<object[]>}
- */
 async function scrapeCategory(categoryUrl, pages = 1) {
-  const page = await newPage();
+  const page    = await newPage();
   const results = [];
 
   try {
     for (let p = 1; p <= pages; p++) {
       const url = p === 1 ? categoryUrl : `${categoryUrl}?page=${p}`;
-      await navigateTo(page, url);
-      await autoScroll(page);
-      const products = await page.evaluate(extractCards);
-      results.push(...products);
+      try {
+        await navigateTo(page, url);
+        await autoScroll(page);
+        const products = await page.evaluate(extractCards);
+        results.push(...products);
+      } catch (err) {
+        console.warn(`[daraz] scrapeCategory p${p} skipped (${err.code || "ERR"}): ${err.message}`);
+        break;
+      }
       if (p < pages) await sleep(DELAY);
     }
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
   }
 
   return results;

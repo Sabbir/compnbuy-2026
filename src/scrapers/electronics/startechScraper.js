@@ -54,9 +54,9 @@ function extractProducts() {
 
     // Price: .p-item-price, .price (exclude old/special)
     const priceEl  = card.querySelector(
-      ".p-item-price, .price:not(.old-price):not(.special-price) span, [class*='price'] span"
+      ".p-item-price span"
     );
-    const origEl   = card.querySelector(".old-price, .regular-price, del, s");
+    const origEl   = priceEl.querySelector(".p-item-price, .price-old");
     const badgeEl  = card.querySelector(".sticker, .badge, [class*='discount'], [class*='onsale'], .offer");
     const imgEl    = card.querySelector("img");
     const linkEl   = card.querySelector("a");
@@ -95,7 +95,7 @@ async function trySearchApi(page, query, pageNum = 1) {
   for (const endpoint of [jsonUrl]) {
     try {
       const data = await page.evaluate(async (u) => {
-        const r = await fetch(u, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
+        const r = await fetch(u, { headers: { Accept: "application/json" } });
         if (!r.ok) return null;
         const ct = r.headers.get("content-type") || "";
         if (!ct.includes("json")) return null;
@@ -179,10 +179,14 @@ async function searchStarTech(keyword, pages = 1) {
         const products = await page.evaluate(extractProducts);
         if (products.length === 0) break;
         results.push(...products);
+        console.log(results)
         if (p < pages) await sleep(DELAY);
       }
     }
-  } finally {
+  } catch(error){
+    console.log(error.message)
+  }
+   finally {
     await page.close();
   }
 

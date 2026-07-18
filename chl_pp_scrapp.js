@@ -8,7 +8,7 @@ puppeteer.use(StealthPlugin());
 const SEARCH_TERM = 'milk';
 
 async function scrapeWithPuppeteer(searchTerm) {
-    const url = `https://chaldal.com/search?q=${encodeURIComponent(searchTerm)}`;
+    const url = `https://chaldal.com/search/${encodeURIComponent(searchTerm)}`;
     console.log(`Launching browser to scrape: ${url}`);
 
     // Launch a headless browser

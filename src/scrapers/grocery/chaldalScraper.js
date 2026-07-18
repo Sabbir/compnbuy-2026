@@ -1,285 +1,243 @@
 /**
  * chaldalScraper.js
- * Scrapes product data from chaldal.com
  *
- * Platform : React SPA (Angular-based frontend)
- * Search URL: https://chaldal.com/search/<keyword>   (path-based, NOT ?q=)
- * Browse URL: https://chaldal.com/<category>          e.g. /fruit, /dairy
+ * CONFIRMED API (from live response, July 2026):
+ *   GET https://eggyolk.chaldal.com/api/Product/Search?query=rice&warehouseId=1
  *
- * Strategy:
- *  1. XHR/Fetch interception — Chaldal's React app calls an internal JSON
- *     API on every page load. We capture those responses before DOM rendering.
- *  2. DOM fallback — parse rendered .product cards if interception returns nothing.
+ * RESPONSE SHAPE:
+ *   {
+ *     "Products":  [...],   ← array of products
+ *     "PageIndex": 0,
+ *     "PageSize":  50,
+ *     "NumMatches": 52,
+ *     "Dynamics":  null
+ *   }
  *
- * All response.text() calls are guarded: HTML pages (starting with "<")
- * are silently discarded to prevent "Unexpected token '<'" JSON parse errors.
+ * PRODUCT FIELDS (all confirmed from real data):
+ *   ProductVariantId  ← numeric ID
+ *   Name              ← full name e.g. "Paijam Rice (Boiled) 1 kg"
+ *   SubText           ← unit/weight e.g. "1 kg"
+ *   Price             ← MRP / original price  { Lo, Mid, Hi, SignScale }
+ *   DiscountedPrice   ← actual selling price  { Lo, Mid, Hi, SignScale }
+ *                        Price > DiscountedPrice → item is on sale
+ *                        Price = DiscountedPrice → no discount
+ *   Slug              ← URL slug e.g. "paijam-rice-boiled-1-kg"
+ *   PictureUrls       ← string[] — use index [0]
+ *   ProductAvailabilityForSelectedWarehouse
+ *                     ← array; EMPTY = out of stock,
+ *                        any entry with Quantity > 0 = in stock
+ *
+ * FALLBACK:
+ *   If the GET API is unreachable, falls back to Puppeteer + location
+ *   cookie injection to bypass the city-picker gate, then intercepts XHR.
  */
 
-const { newPage } = require("../../browser/browserManager");
-const { navigateTo, autoScroll, sleep } = require("../../browser/pageHelpers");
-const { injectSafeFetch } = require("../../utils/safeFetch");
+const { newPage }           = require("../../browser/browserManager");
+const { navigateTo, sleep } = require("../../browser/pageHelpers");
 
-const BASE_URL    = "https://chaldal.com";
-const DELAY       = parseInt(process.env.PAGE_DELAY) || 2000;
-const SOURCE_NAME = "chaldal";
+const BASE_URL     = "https://chaldal.com";
+const API_URL      = "https://eggyolk.chaldal.com/api/Product/Search";
+const SOURCE_NAME  = "chaldal";
+const WAREHOUSE_ID = parseInt(process.env.CHALDAL_WAREHOUSE_ID) || 1;
+const PAGE_SIZE    = 50;
+const API_TIMEOUT  = 15000;
 
-// ─── Safe JSON parse ──────────────────────────────────────────────────────────
+// ─── DecimalDTO → number ──────────────────────────────────────────────────────
+// Chaldal encodes BDT prices as { Lo, Mid, Hi, SignScale }.
+// For all observed BDT prices: Mid=0, Hi=0, SignScale=0 → value = Lo.
+function dtoToNumber(dto) {
+  if (dto == null) return null;
+  if (typeof dto === "number") return dto;
+  if (typeof dto !== "object") return parseFloat(String(dto)) || null;
 
-function safeParseJson(text) {
+  const { Lo = 0, Mid = 0, Hi = 0, SignScale = 0 } = dto;
+
+  // Fast path — covers 100% of BDT prices seen in real data
+  if (SignScale === 0 && Mid === 0 && Hi === 0) return Lo;
+
+  // Full decode for fractional/large values
   try {
-    const t = (text || "").trimStart();
-    if (t[0] !== "{" && t[0] !== "[") return null;
-    return JSON.parse(t);
+    const isNeg = (SignScale & 0x80000000) !== 0;
+    const scale = (SignScale >>> 16) & 0xff;
+    const raw   = (BigInt(Hi >>> 0) << 64n)
+                | (BigInt(Mid >>> 0) << 32n)
+                |  BigInt(Lo >>> 0);
+    const value = Number(raw) / Math.pow(10, scale);
+    return isNeg ? -value : value;
   } catch {
+    return Lo || null;
+  }
+}
+
+// ─── Normalizer ───────────────────────────────────────────────────────────────
+function normalizeProduct(p, query) {
+  const mrp      = dtoToNumber(p.Price);           // original / MRP
+  const selling  = dtoToNumber(p.DiscountedPrice); // what customer pays
+
+  // currentPrice  = selling price (DiscountedPrice)
+  // originalPrice = only set when there's an actual discount
+  const currentPrice  = selling ?? mrp;
+  const originalPrice = (mrp && selling && mrp > selling) ? mrp : null;
+
+  let discount = null;
+  if (originalPrice && currentPrice) {
+    const pct = Math.round((1 - currentPrice / originalPrice) * 100);
+    if (pct > 0) discount = `-${pct}%`;
+  }
+
+  // Stock: empty array = out of stock; any entry with Quantity > 0 = in stock
+  const avail   = p.ProductAvailabilityForSelectedWarehouse;
+  const inStock = Array.isArray(avail) && avail.length > 0
+    ? avail.some((a) => (a.Quantity ?? 0) > 0)
+    : false;
+
+  // Image: PictureUrls[0]
+  const pics     = Array.isArray(p.PictureUrls) ? p.PictureUrls : [];
+  const imageUrl = pics[0]
+    ? (pics[0].startsWith("//") ? "https:" + pics[0] : pics[0])
+    : "";
+
+  const slug       = p.Slug || "";
+  const productUrl = slug
+    ? `${BASE_URL}/${slug}`
+    : p.ProductVariantId
+      ? `${BASE_URL}/product/${p.ProductVariantId}`
+      : "";
+
+  return {
+    name:          p.Name   || "",
+    price:         currentPrice,
+    originalPrice,
+    discount,
+    unit:          p.SubText || null,
+    imageUrl,
+    productUrl,
+    inStock,
+    source:        SOURCE_NAME,
+    category:      "Grocery",
+    query:         query || "",
+  };
+}
+
+// ─── Strategy 1: Direct GET API ───────────────────────────────────────────────
+async function fetchViaApi(keyword) {
+  const { default: fetch } = await import("node-fetch");
+
+  const url = `${API_URL}?query=${encodeURIComponent(keyword)}&warehouseId=${WAREHOUSE_ID}`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+  try {
+    const res = await fetch(url, {
+      signal:  controller.signal,
+      headers: {
+        "Accept":          "application/json",
+        "Origin":          "https://chaldal.com",
+        "Referer":         "https://chaldal.com/",
+        "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+      },
+    });
+
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      console.warn(`[chaldal] API ${res.status} for "${keyword}"`);
+      return null;
+    }
+
+    const json = await res.json().catch(() => null);
+    if (!json) return null;
+
+    // Confirmed shape: { Products: [...], PageIndex, PageSize, NumMatches, Dynamics }
+    const items = json.Products || json.products || (Array.isArray(json) ? json : null);
+
+    if (!items) {
+      console.warn(`[chaldal] Unexpected response. Keys: ${Object.keys(json).join(", ")}`);
+      return null;
+    }
+
+    return items;
+  } catch (err) {
+    clearTimeout(timer);
+    console.warn(`[chaldal] API error for "${keyword}":`,
+      err.name === "AbortError" ? "timeout" : err.message);
     return null;
   }
 }
 
-// ─── XHR / Fetch Interception ────────────────────────────────────────────────
-
-/**
- * Navigate to a URL, capture all JSON network responses that look like
- * product data, then scroll to trigger any lazy-loaded content.
- */
-async function interceptProducts(page, url) {
-  const captured = [];
-
-  const handler = async (response) => {
-    try {
-      const resUrl = response.url();
-      const status = response.status();
-
-      // Only consider successful responses
-      if (status < 200 || status >= 300) return;
-
-      const ct = response.headers()["content-type"] || "";
-
-      // Filter to likely product API calls
-      const isProductApi =
-        ct.includes("json") ||
-        resUrl.includes("/api/") ||
-        resUrl.includes("product") ||
-        resUrl.includes("search") ||
-        resUrl.includes("catalog");
-
-      if (!isProductApi) return;
-
-      const text = await response.text().catch(() => "");
-      const json = safeParseJson(text);
-      if (!json) return;
-
-      // Chaldal returns various shapes — try all common keys
-      const items =
-        json.products                         ||
-        json.data?.products                   ||
-        json.data                             ||
-        json.items                            ||
-        json.results                          ||
-        json.searchResult?.products           ||
-        json.searchResult                     ||
-        (Array.isArray(json) ? json : null);
-
-      if (Array.isArray(items) && items.length > 0) {
-        captured.push(...items);
-      }
-    } catch { /* silently skip */ }
-  };
-
-  page.on("response", handler);
-
+// ─── Strategy 2: Browser + cookie injection (fallback) ───────────────────────
+async function fetchViaBrowser(keyword) {
+  const page = await newPage();
   try {
-    await navigateTo(page, url);
-    await autoScroll(page);
-    // Wait for async XHR calls to complete after scroll
-    await sleep(2000);
-  } finally {
-    page.off("response", handler);
-  }
-
-  return captured;
-}
-
-// ─── DOM Extractor ────────────────────────────────────────────────────────────
-
-function extractFromDom() {
-  const cleanPrice = (raw) => {
-    const n = parseFloat((raw || "").replace(/[^\d.]/g, ""));
-    return isNaN(n) ? null : n;
-  };
-
-  // Chaldal's React DOM uses these class patterns for product cards
-  const selectors = [
-    ".product",
-    "[class*='productItem']",
-    "[class*='ProductCard']",
-    "[class*='product-card']",
-    "[class*='item']",
-  ];
-
-  let cards = [];
-  for (const sel of selectors) {
-    const found = document.querySelectorAll(sel);
-    if (found.length > 1) { cards = found; break; }
-  }
-
-  return Array.from(cards).map((card) => {
-    const nameEl  = card.querySelector(
-      "[class*='name'], [class*='title'], [class*='Name'], h3, h4, h2"
-    );
-    const priceEl = card.querySelector(
-      "[class*='price']:not([class*='old']):not([class*='del']):not([class*='strike'])"
-    );
-    const origEl  = card.querySelector(
-      "[class*='old'], [class*='strike'], [class*='market'], del, s"
-    );
-    const imgEl   = card.querySelector("img");
-    const linkEl  = card.querySelector("a");
-    const unitEl  = card.querySelector(
-      "[class*='unit'], [class*='weight'], [class*='size'], [class*='qty']"
-    );
-    const badgeEl = card.querySelector(
-      "[class*='discount'], [class*='off'], [class*='badge'], [class*='tag']"
+    // Inject location cookies before navigation to bypass city-picker gate
+    await page.setCookie(
+      { name: "warehouseId",     value: String(WAREHOUSE_ID), domain: ".chaldal.com", path: "/" },
+      { name: "deliveryAreaId",  value: "1",                  domain: ".chaldal.com", path: "/" },
+      { name: "hasSelectedCity", value: "true",               domain: ".chaldal.com", path: "/" }
     );
 
-    const name = nameEl?.textContent?.trim() || nameEl?.getAttribute("title") || "";
-    if (!name) return null;
+    const captured = [];
 
-    return {
-      name,
-      price:         cleanPrice(priceEl?.textContent),
-      originalPrice: cleanPrice(origEl?.textContent),
-      discount:      badgeEl?.textContent?.trim() || null,
-      unit:          unitEl?.textContent?.trim()  || null,
-      imageUrl:      imgEl?.src || imgEl?.dataset?.src || imgEl?.dataset?.lazySrc || "",
-      productUrl:    linkEl?.href
-        ? (linkEl.href.startsWith("http") ? linkEl.href : "https://chaldal.com" + linkEl.href)
-        : "",
+    const handler = async (response) => {
+      try {
+        const url    = response.url();
+        const status = response.status();
+        if (status < 200 || status >= 300) return;
+        if (!url.includes("eggyolk.chaldal.com/api/Product/Search")) return;
+
+        const text = await response.text().catch(() => "");
+        if (!text || text[0] === "<") return;
+
+        const json  = JSON.parse(text);
+        const items = json.Products || json.products || (Array.isArray(json) ? json : null);
+        if (Array.isArray(items) && items.length > 0) captured.push(...items);
+      } catch { /* skip */ }
     };
-  }).filter(Boolean);
-}
 
-// ─── Normalizer for intercepted API data ─────────────────────────────────────
+    page.on("response", handler);
 
-function normalizeApiProduct(p) {
-  // Chaldal API uses various field name casings
-  const price     = p.price       ?? p.Price       ?? p.discountedPrice ?? p.salePrice    ?? null;
-  const origPrice = p.marketPrice ?? p.MarketPrice ?? p.originalPrice   ?? p.regularPrice ?? null;
+    const slug = keyword.trim().toLowerCase().replace(/\s+/g, "-");
+    await navigateTo(page, `${BASE_URL}/search/${encodeURIComponent(slug)}`);
+    await sleep(4000);
 
-  const imageUrl =
-    p.imageUrl   || p.ImageUrl   ||
-    p.image      || p.Image      ||
-    p.imageUrls?.[0] || p.images?.[0] || "";
-
-  const productUrl = p.url || p.slug
-    ? `${BASE_URL}${p.url || "/product/" + p.slug}`
-    : "";
-
-  return {
-    name:          p.name         || p.Name         || p.productName || p.title || "",
-    price:         typeof price === "number"     ? price     : parseFloat(String(price || ""))     || null,
-    originalPrice: typeof origPrice === "number" ? origPrice : parseFloat(String(origPrice || "")) || null,
-    discount:      p.discountText || p.discount      || p.discountPercentage
-      ? (p.discountText || p.discount || `-${p.discountPercentage}%`)
-      : null,
-    unit:          p.unit    || p.Unit    || p.weight || p.unitOfMeasure || null,
-    imageUrl:      imageUrl.startsWith("//") ? "https:" + imageUrl : imageUrl,
-    productUrl,
-    inStock:       p.inStock ?? p.IsAvailable ?? p.available ?? true,
-  };
-}
-
-// ─── Browse (category page) ───────────────────────────────────────────────────
-
-/**
- * Scrape a Chaldal category page.
- * @param {string} categoryUrl  e.g. "https://chaldal.com/fruit"
- * @param {number} pages
- */
-async function scrapeChaldal(categoryUrl = BASE_URL, pages = 1) {
-  const page    = await newPage();
-  const results = [];
-
-  try {
-    // evaluateOnNewDocument so safeFetch survives every navigation
-    await injectSafeFetch(page);
-
-    for (let p = 1; p <= pages; p++) {
-      const url      = p === 1 ? categoryUrl : `${categoryUrl}?page=${p}`;
-      const captured = await interceptProducts(page, url);
-
-      if (captured.length > 0) {
-        results.push(...captured.map(normalizeApiProduct));
-      } else {
-        const dom = await page.evaluate(extractFromDom);
-        if (dom.length === 0 && p > 1) break; // no more pages
-        results.push(...dom);
-      }
-
-      if (p < pages) await sleep(DELAY);
-    }
+    page.off("response", handler);
+    return captured.length > 0 ? captured : null;
   } finally {
     await page.close();
   }
-
-  return results
-    .filter((p) => p.name)
-    .map((p) => ({ ...p, source: SOURCE_NAME, category: "Grocery" }));
 }
 
-// ─── Search ───────────────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
+async function searchChaldal(keyword, _pages = 1) {
+  if (!keyword?.trim()) throw new Error("keyword is required");
 
-/**
- * Search Chaldal products by keyword.
- *
- * Chaldal search URL pattern: https://chaldal.com/search/<keyword>
- * e.g. https://chaldal.com/search/eggs
- *      https://chaldal.com/search/milk
- *
- * The search results are loaded via the same XHR interception as browse pages.
- *
- * @param {string} keyword  e.g. "eggs", "milk", "rice"
- * @param {number} pages
- */
-async function searchChaldal(keyword, pages = 1) {
-  if (!keyword || !keyword.trim()) {
-    throw new Error("keyword is required for searchChaldal");
+  const q = keyword.trim();
+  console.log(`[chaldal] Searching: "${q}" (warehouseId=${WAREHOUSE_ID})`);
+
+  let raw = await fetchViaApi(q);
+
+  if (!raw) {
+    console.log(`[chaldal] Falling back to browser for "${q}"`);
+    try { raw = await fetchViaBrowser(q); }
+    catch (err) { console.error(`[chaldal] Browser fallback failed:`, err.message); }
   }
 
-  // Chaldal uses path-based search: /search/<keyword>
-  // Spaces become dashes or are URL-encoded
-  const slug    = keyword.trim().toLowerCase().replace(/\s+/g, "-");
-  const page    = await newPage();
-  const results = [];
-
-  try {
-    await injectSafeFetch(page);
-
-    for (let p = 1; p <= pages; p++) {
-      // Page 1: /search/eggs
-      // Page 2+: Chaldal doesn't appear to paginate search, but we include the param just in case
-      const url = p === 1
-        ? `${BASE_URL}/search/${encodeURIComponent(slug)}`
-        : `${BASE_URL}/search/${encodeURIComponent(slug)}?page=${p}`;
-
-      const captured = await interceptProducts(page, url);
-
-      if (captured.length > 0) {
-        results.push(...captured.map(normalizeApiProduct));
-      } else {
-        const dom = await page.evaluate(extractFromDom);
-        if (dom.length === 0) break;
-        results.push(...dom);
-      }
-
-      if (p < pages) await sleep(DELAY);
-    }
-  } finally {
-    await page.close();
+  if (!raw?.length) {
+    console.warn(`[chaldal] No products found for "${q}"`);
+    return [];
   }
 
-  return results
-    .filter((p) => p.name)
-    .map((p) => ({ ...p, source: SOURCE_NAME, category: "Grocery", query: keyword.trim() }));
+  console.log(`[chaldal] ${raw.length} raw products for "${q}"`);
+
+  return raw
+    .map((p) => normalizeProduct(p, q))
+    .filter((p) => p.name && p.price !== null);
+}
+
+async function scrapeChaldal(categoryUrl = BASE_URL) {
+  const segment = (categoryUrl.split("/").pop() || "grocery").replace(/-/g, " ");
+  return searchChaldal(segment);
 }
 
 module.exports = { scrapeChaldal, searchChaldal };

@@ -39,6 +39,23 @@ async function fetchShopifyPage(page, url) {
   }, url);
 }
 
+// Resolve a Shopify image value to a clean https:// URL string.
+// Shopify returns images in multiple shapes depending on the endpoint:
+//   products.json   → p.images[0].src = "//cdn.shopify.com/..."  (string)
+//   suggest.json    → p.featured_image = { url: "//cdn...", aspect_ratio, alt } (OBJECT)
+//                  or p.image         = "//cdn..."  (string)
+// This handles all cases and always returns a clean https string or "".
+function fixImageUrl(val) {
+  if (!val) return "";
+  // Object shape: { url: "//cdn...", ... }
+  if (typeof val === "object") {
+    val = val.url || val.src || val.original || "";
+  }
+  if (typeof val !== "string" || !val) return "";
+  if (val.startsWith("//")) return "https:" + val;
+  return val;
+}
+
 function normalizeShopifyProduct(p) {
   const variants = p.variants || [];
 
@@ -94,7 +111,13 @@ function normalizeShopifyProduct(p) {
     tags:          (p.tags || []).join(", ")  || null,
     sizes:         sizes.length ? sizes : null,
     colors:        colors.length ? colors : null,
-    imageUrl:      p.images?.[0]?.src         || p.featured_image || "",
+    imageUrl:      fixImageUrl(
+                     p.images?.[0]?.src  ||
+                     p.images?.[0]       ||
+                     p.featured_image    ||
+                     p.image             ||
+                     ""
+                   ),
     productUrl:    `${BASE_URL}/products/${p.handle}`,
     inStock:       p.available                ?? true,
     variantCount:  variants.length            || 1,
@@ -289,7 +312,13 @@ async function searchBlucheez(keyword, pages = 1) {
         price:         parseFloat(p.price)          || null,
         originalPrice: parseFloat(p.compare_at_price) || null,
         discount:      null,
-        imageUrl:      p.image?.url                 || p.featured_image || "",
+        // In suggest.json, featured_image is an OBJECT {url, aspect_ratio, alt}
+        // fixImageUrl handles both object and string shapes
+        imageUrl:      fixImageUrl(
+                         p.featured_image ||
+                         p.image          ||
+                         ""
+                       ),
         productUrl:    p.url?.startsWith("http")
           ? p.url
           : `${BASE_URL}${p.url}`,
@@ -311,7 +340,7 @@ async function searchBlucheez(keyword, pages = 1) {
   } finally {
     await page.close();
   }
-
+  console.log(results)
   return results.map((p) => ({ ...p, source: SOURCE_NAME, category: "Clothing" }));
 }
 
